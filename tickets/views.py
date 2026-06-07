@@ -263,10 +263,14 @@ def reports(request):
         used_tickets=Count('created_tickets', filter=Q(created_tickets__status='used')),
     ).order_by('-tickets_created')
 
-    scanners = User.objects.filter(profile__role='scanner').annotate(
-        total_scans=Count('validated_tickets'),
-        valid_scans=Count('validated_tickets', filter=Q(scan_performed__result='valid')),
-    ).order_by('-total_scans')
+    scanner_qs = User.objects.filter(profile__role='scanner')
+    scanners = []
+    for sc in scanner_qs:
+        logs = ScanLog.objects.filter(scanned_by=sc)
+        sc.total_scans = logs.count()
+        sc.valid_scans = logs.filter(result='valid').count()
+        scanners.append(sc)
+    scanners.sort(key=lambda x: x.total_scans, reverse=True)
 
     recent_logs = ScanLog.objects.select_related('ticket', 'scanned_by').order_by('-scanned_at')[:50]
 
