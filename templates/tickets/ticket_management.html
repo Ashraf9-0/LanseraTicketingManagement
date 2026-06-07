@@ -1,0 +1,53 @@
+{% extends 'tickets/base.html' %}
+{% block title %}Ticket Management{% endblock %}
+{% block content %}
+<div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+  <div>
+    <h1 class="page-title">Ticket Management</h1>
+    <p class="page-sub">{{ tickets.count }} ticket{{ tickets.count|pluralize }} found</p>
+  </div>
+  <a href="{% url 'create_ticket' %}" class="btn btn-primary">+ New Ticket</a>
+</div>
+
+<form method="get" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:1.5rem; align-items:center;">
+  <input type="text" name="search" class="search-input" placeholder="Search name, ID, email…" value="{{ search }}">
+  <a href="?{% if search %}search={{ search }}&{% endif %}" class="filter-btn {% if not status_filter and not active_filter %}active{% endif %}">All</a>
+  <a href="?status=unused{% if search %}&search={{ search }}{% endif %}" class="filter-btn {% if status_filter == 'unused' %}active{% endif %}">Unused</a>
+  <a href="?status=used{% if search %}&search={{ search }}{% endif %}" class="filter-btn {% if status_filter == 'used' %}active{% endif %}">Used</a>
+  <a href="?active=active{% if search %}&search={{ search }}{% endif %}" class="filter-btn {% if active_filter == 'active' %}active{% endif %}">Active</a>
+  <a href="?active=inactive{% if search %}&search={{ search }}{% endif %}" class="filter-btn {% if active_filter == 'inactive' %}active{% endif %}">Inactive</a>
+  <button type="submit" class="btn btn-secondary btn-sm">Search</button>
+</form>
+
+<div class="card">
+  {% if tickets %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Ticket ID</th><th>Purchaser</th><th>Created By</th><th>Status</th><th>Active</th><th>Created</th><th>Validated</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for t in tickets %}
+        <tr>
+          <td><span class="mono">{{ t.short_id }}</span></td>
+          <td>{{ t.purchaser_name }}</td>
+          <td style="color:var(--text2)">{{ t.created_by.username }}</td>
+          <td><span class="tag tag-{{ t.status }}">{{ t.status }}</span></td>
+          <td>
+            <a href="{% url 'toggle_ticket_active' t.pk %}" class="tag {% if t.is_active %}tag-unused{% else %}tag-inactive{% endif %}" style="cursor:pointer;">
+              {% if t.is_active %}Active{% else %}Inactive{% endif %}
+            </a>
+          </td>
+          <td style="color:var(--text3)">{{ t.created_at|date:"M d, Y" }}</td>
+          <td style="color:var(--text3)">{% if t.validated_at %}{{ t.validated_at|date:"M d, Y H:i" }}{% else %}—{% endif %}</td>
+          <td><a href="{% url 'ticket_detail' t.pk %}" class="btn btn-secondary btn-sm">View</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty"><div class="empty-icon">🎫</div><p>No tickets match your filters.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

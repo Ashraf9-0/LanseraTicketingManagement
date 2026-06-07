@@ -1,0 +1,56 @@
+{% extends 'tickets/base.html' %}
+{% block title %}Tickets{% endblock %}
+{% block content %}
+<div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+  <div>
+    <h1 class="page-title">{% if user.profile.role == 'admin' %}All Tickets{% else %}My Tickets{% endif %}</h1>
+    <p class="page-sub">{{ tickets.count }} ticket{{ tickets.count|pluralize }} found</p>
+  </div>
+  {% if user.profile.role != 'scanner' %}
+  <a href="{% url 'create_ticket' %}" class="btn btn-primary">+ New Ticket</a>
+  {% endif %}
+</div>
+
+<div class="filters">
+  <a href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}" class="filter-btn {% if not status_filter %}active{% endif %}">All</a>
+  <a href="?status=unused{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="filter-btn {% if status_filter == 'unused' %}active{% endif %}">Unused</a>
+  <a href="?status=used{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="filter-btn {% if status_filter == 'used' %}active{% endif %}">Used</a>
+</div>
+
+<div class="card">
+  {% if tickets %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Ticket ID</th>
+          <th>Purchaser</th>
+          {% if user.profile.role == 'admin' %}<th>Created By</th>{% endif %}
+          <th>Status</th>
+          <th>Active</th>
+          <th>Created</th>
+          <th>Validated</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in tickets %}
+        <tr>
+          <td><span class="mono">{{ t.short_id }}</span></td>
+          <td>{{ t.purchaser_name }}</td>
+          {% if user.profile.role == 'admin' %}<td style="color:var(--text2)">{{ t.created_by.username }}</td>{% endif %}
+          <td><span class="tag tag-{{ t.status }}">{{ t.status }}</span></td>
+          <td>{% if t.is_active %}<span style="color:var(--green)">●</span>{% else %}<span style="color:var(--text3)">●</span>{% endif %}</td>
+          <td style="color:var(--text3)">{{ t.created_at|date:"M d, Y" }}</td>
+          <td style="color:var(--text3)">{% if t.validated_at %}{{ t.validated_at|date:"M d, Y H:i" }}{% else %}—{% endif %}</td>
+          <td><a href="{% url 'ticket_detail' t.pk %}" class="btn btn-secondary btn-sm">View</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty"><div class="empty-icon">🎫</div><p>No tickets found.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

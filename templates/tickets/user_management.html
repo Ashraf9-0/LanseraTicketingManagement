@@ -1,0 +1,35 @@
+{% extends 'tickets/base.html' %}
+{% block title %}User Management{% endblock %}
+{% block content %}
+<div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+  <div>
+    <h1 class="page-title">User Management</h1>
+    <p class="page-sub">{{ users.count }} user{{ users.count|pluralize }}</p>
+  </div>
+  <a href="{% url 'create_user' %}" class="btn btn-primary">+ New User</a>
+</div>
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Username</th><th>Email</th><th>Role</th><th>Active</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td style="font-weight:600;">{{ u.username }}</td>
+          <td style="color:var(--text2)">{{ u.email|default:"—" }}</td>
+          <td>
+            {% if u.profile %}
+            <span class="tag tag-{{ u.profile.role }}">{{ u.profile.get_role_display }}</span>
+            {% else %}
+            <span class="tag tag-inactive">No role</span>
+            {% endif %}
+          </td>
+          <td>{% if u.is_active %}<span style="color:var(--green)">● Active</span>{% else %}<span style="color:var(--text3)">● Inactive</span>{% endif %}</td>
+          <td><a href="{% url 'edit_user' u.pk %}" class="btn btn-secondary btn-sm">Edit</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

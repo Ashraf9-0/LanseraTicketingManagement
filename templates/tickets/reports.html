@@ -1,0 +1,80 @@
+{% extends 'tickets/base.html' %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Reports & Statistics</h1>
+  <p class="page-sub">System-wide activity overview</p>
+</div>
+
+<div class="stats-grid" style="margin-bottom:1.5rem;">
+  <div class="stat-card"><div class="stat-label">Total Tickets</div><div class="stat-value yellow">{{ total }}</div></div>
+  <div class="stat-card"><div class="stat-label">Used</div><div class="stat-value blue">{{ used }}</div></div>
+  <div class="stat-card"><div class="stat-label">Unused</div><div class="stat-value green">{{ unused }}</div></div>
+  <div class="stat-card"><div class="stat-label">Inactive</div><div class="stat-value" style="color:var(--text3)">{{ inactive }}</div></div>
+  <div class="stat-card"><div class="stat-label">Valid Scans</div><div class="stat-value green">{{ scan_data.valid|default:0 }}</div></div>
+  <div class="stat-card"><div class="stat-label">Duplicate Scans</div><div class="stat-value orange">{{ scan_data.already_used|default:0 }}</div></div>
+  <div class="stat-card"><div class="stat-label">Invalid Attempts</div><div class="stat-value red">{{ scan_data.invalid|default:0 }}</div></div>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem;">
+  <div class="card">
+    <div class="card-title">Sellers Performance</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Seller</th><th>Created</th><th>Used</th></tr></thead>
+        <tbody>
+          {% for s in sellers %}
+          <tr>
+            <td>{{ s.username }}</td>
+            <td style="color:var(--accent)">{{ s.tickets_created }}</td>
+            <td style="color:var(--blue)">{{ s.used_tickets }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3" style="color:var(--text3); text-align:center;">No sellers found</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Scanner Activity</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Scanner</th><th>Total</th><th>Valid</th></tr></thead>
+        <tbody>
+          {% for s in scanners %}
+          <tr>
+            <td>{{ s.username }}</td>
+            <td style="color:var(--accent)">{{ s.total_scans }}</td>
+            <td style="color:var(--green)">{{ s.valid_scans }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3" style="color:var(--text3); text-align:center;">No scanners found</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">Full Scan Audit Log (Last 50)</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Time</th><th>Ticket</th><th>Scanner</th><th>Result</th></tr></thead>
+      <tbody>
+        {% for log in recent_logs %}
+        <tr>
+          <td style="color:var(--text3); white-space:nowrap;">{{ log.scanned_at|date:"M d, Y H:i:s" }}</td>
+          <td>{% if log.ticket %}<a href="{% url 'ticket_detail' log.ticket.pk %}" class="mono">{{ log.ticket.short_id }}</a>{% else %}<span style="color:var(--text3)">Unknown</span>{% endif %}</td>
+          <td style="color:var(--text2)">{{ log.scanned_by.username }}</td>
+          <td><span class="tag tag-{{ log.result }}">{{ log.get_result_display }}</span></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" style="color:var(--text3); text-align:center; padding:2rem;">No scan logs yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
