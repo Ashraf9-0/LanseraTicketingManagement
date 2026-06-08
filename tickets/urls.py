@@ -21,4 +21,5 @@ urlpatterns = [
     path('admin-panel/users/create/', views.create_user, name='create_user'),
     path('admin-panel/users/<int:pk>/edit/', views.edit_user, name='edit_user'),
     path('admin-panel/reports/', views.reports, name='reports'),
+    path('tickets/<int:pk>/pdf/', views.ticket_pdf, name='ticket_pdf'),
 ]

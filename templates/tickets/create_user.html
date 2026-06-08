@@ -1,11 +1,12 @@
 {% extends 'tickets/base.html' %}
-{% block title %}Create User{% endblock %}
+{% block title %}Create User – LANESRA{% endblock %}
 {% block content %}
 <div class="page-header">
+  <p style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--mint);margin-bottom:6px;">Admin</p>
   <h1 class="page-title">Create User</h1>
-  <a href="{% url 'user_management' %}" style="color:var(--text3); font-size:13px;">← Back to users</a>
+  <a href="{% url 'user_management' %}" style="font-size:11px;opacity:.5;">← Back to users</a>
 </div>
-<div style="max-width:520px;">
+<div style="max-width:540px;">
   <div class="card">
     <form method="post">
       {% csrf_token %}
@@ -38,7 +39,7 @@
           {% if form.password2.errors %}<ul class="errorlist">{% for e in form.password2.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
         </div>
       </div>
-      <div style="display:flex; gap:8px;">
+      <div style="display:flex;gap:10px;">
         <button type="submit" class="btn btn-primary">Create User</button>
         <a href="{% url 'user_management' %}" class="btn btn-secondary">Cancel</a>
       </div>

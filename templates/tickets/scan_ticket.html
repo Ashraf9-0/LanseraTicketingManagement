@@ -1,20 +1,19 @@
 {% extends 'tickets/base.html' %}
-{% block title %}Scan Ticket{% endblock %}
+{% block title %}Scan Ticket – LANESRA{% endblock %}
 {% block extra_head %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 {% endblock %}
 {% block content %}
 <div class="page-header">
+  <p style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--mint);margin-bottom:6px;">Validation</p>
   <h1 class="page-title">Scan Ticket</h1>
-  <p class="page-sub">Point the camera at a ticket QR code, or enter the token manually</p>
+  <p class="page-sub">Point camera at QR code or enter token manually</p>
 </div>
 
 {% if scan_result %}
 <div class="scan-result {{ scan_result.result }}">
   <div class="scan-result-icon">
-    {% if scan_result.result == 'valid' %}✅
-    {% elif scan_result.result == 'already_used' %}⚠️
-    {% else %}❌{% endif %}
+    {% if scan_result.result == 'valid' %}✅{% elif scan_result.result == 'already_used' %}⚠️{% else %}❌{% endif %}
   </div>
   <div class="scan-result-title">
     {% if scan_result.result == 'valid' %}Entry Granted
@@ -24,79 +23,62 @@
   </div>
   <div class="scan-result-msg">{{ scan_result.message }}</div>
   {% if scan_result.ticket %}
-  <div style="margin-top:1rem; padding:1rem; background:rgba(0,0,0,0.3); border-radius:8px;">
-    <div style="font-size:12px; color:var(--text3); margin-bottom:4px;">Ticket Details</div>
-    <div style="font-size:14px; color:var(--text); font-weight:600;">{{ scan_result.ticket.purchaser_name }}</div>
-    <div class="mono" style="font-size:12px;">{{ scan_result.ticket.short_id }}</div>
+  <div style="margin-top:1.2rem;padding:1rem;background:rgba(0,0,0,0.25);border-radius:3px;">
+    <div style="font-size:11px;opacity:.5;margin-bottom:4px;text-transform:uppercase;letter-spacing:.1em;">Ticket</div>
+    <div style="font-weight:600;">{{ scan_result.ticket.purchaser_name }}</div>
+    <div class="mono">{{ scan_result.ticket.short_id }}</div>
     {% if scan_result.result == 'already_used' and scan_result.first_scan %}
-    <div style="margin-top:8px; font-size:12px; color:var(--orange);">
+    <div style="margin-top:8px;font-size:11px;color:var(--orange);">
       Previously scanned: {{ scan_result.first_scan|date:"M d, Y H:i:s" }}
       {% if scan_result.first_scanner %}by {{ scan_result.first_scanner.username }}{% endif %}
-    </div>
-    {% endif %}
-  </div>
-  {% endif %}
+    </div>{% endif %}
+  </div>{% endif %}
 </div>
 {% endif %}
 
 <div style="max-width:500px;">
   <div class="card" style="margin-bottom:1rem;">
     <div class="card-title">📷 Camera Scanner</div>
-    <div id="reader" style="width:100%;"></div>
-    <div style="display:flex; gap:8px; margin-top:1rem;">
+    <div id="reader"></div>
+    <div style="display:flex;gap:8px;margin-top:1rem;">
       <button id="startBtn" onclick="startScan()" class="btn btn-primary">Start Camera</button>
-      <button id="stopBtn" onclick="stopScan()" class="btn btn-secondary" style="display:none;">Stop Camera</button>
+      <button id="stopBtn" onclick="stopScan()" class="btn btn-secondary" style="display:none;">Stop</button>
     </div>
   </div>
-
   <div class="card">
     <div class="card-title">⌨️ Manual Entry</div>
     <form method="post" id="scanForm">
       {% csrf_token %}
       <div class="form-group">
         <label class="form-label">Token / QR Data</label>
-        <input type="text" name="ticket_token" id="tokenInput" class="form-control" placeholder="Paste QR code data here...">
+        <input type="text" name="ticket_token" class="form-control" placeholder="Paste QR code data here…">
       </div>
-      <button type="submit" class="btn btn-primary">Validate Ticket</button>
+      <button type="submit" class="btn btn-primary">Validate</button>
     </form>
   </div>
 </div>
 
 <form method="post" id="autoScanForm" style="display:none;">
-  {% csrf_token %}
-  <input type="hidden" name="ticket_token" id="autoToken">
+  {% csrf_token %}<input type="hidden" name="ticket_token" id="autoToken">
 </form>
 
 <script>
-let html5QrcodeScanner = null;
-
+let scanner = null;
 function startScan() {
   document.getElementById('startBtn').style.display = 'none';
   document.getElementById('stopBtn').style.display = 'inline-flex';
-
-  html5QrcodeScanner = new Html5Qrcode("reader");
-  html5QrcodeScanner.start(
-    { facingMode: "environment" },
-    { fps: 10, qrbox: { width: 250, height: 250 } },
-    (decodedText) => {
-      stopScan();
-      document.getElementById('autoToken').value = decodedText;
-      document.getElementById('autoScanForm').submit();
-    },
-    (error) => {}
-  ).catch(err => {
-    console.error('Camera error:', err);
+  scanner = new Html5Qrcode("reader");
+  scanner.start({ facingMode:"environment" }, { fps:10, qrbox:{width:250,height:250} },
+    (text) => { stopScan(); document.getElementById('autoToken').value = text; document.getElementById('autoScanForm').submit(); },
+    () => {}
+  ).catch(() => {
     document.getElementById('startBtn').style.display = 'inline-flex';
     document.getElementById('stopBtn').style.display = 'none';
-    alert('Could not access camera. Use manual entry below.');
+    alert('Camera unavailable. Use manual entry.');
   });
 }
-
 function stopScan() {
-  if (html5QrcodeScanner) {
-    html5QrcodeScanner.stop().catch(() => {});
-    html5QrcodeScanner = null;
-  }
+  if (scanner) { scanner.stop().catch(()=>{}); scanner = null; }
   document.getElementById('startBtn').style.display = 'inline-flex';
   document.getElementById('stopBtn').style.display = 'none';
 }

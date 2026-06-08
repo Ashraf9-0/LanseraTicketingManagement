@@ -3,22 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}QR Ticketing{% endblock %} – TicketHub</title>
+  <title>{% block title %}LANESRA Ticketing{% endblock %}</title>
   {% load static %}
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   {% block extra_head %}{% endblock %}
 </head>
 <body>
   <nav class="navbar">
     <div class="nav-brand">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-        <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="4" height="4"/>
-        <rect x="20" y="18" width="1" height="3"/><rect x="17" y="20" width="3" height="1"/>
-      </svg>
-      TicketHub
+      <img src="{% static 'images/lansera1.jpg' %}" alt="LANESRA">      LANESRA
     </div>
     {% if user.is_authenticated %}
     <div class="nav-links">
@@ -40,10 +33,10 @@
     </div>
     <div class="nav-user">
       <span class="nav-badge badge-{{ user.profile.role }}">{{ user.profile.role }}</span>
-      <span style="color:var(--text2); font-size:13px;">{{ user.username }}</span>
+      <span class="nav-username">{{ user.username }}</span>
       <form method="post" action="{% url 'logout' %}" style="display:inline;">
         {% csrf_token %}
-        <button type="submit" class="btn-logout">Logout</button>
+        <button type="submit" class="btn-logout">Sign Out</button>
       </form>
     </div>
     {% endif %}
@@ -59,7 +52,6 @@
     {% endif %}
     {% block content %}{% endblock %}
   </div>
-
   {% block extra_js %}{% endblock %}
 </body>
 </html>

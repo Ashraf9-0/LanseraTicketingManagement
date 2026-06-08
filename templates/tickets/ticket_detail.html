@@ -1,50 +1,46 @@
 {% extends 'tickets/base.html' %}
-{% block title %}Ticket {{ ticket.short_id }}{% endblock %}
+{% block title %}Ticket {{ ticket.short_id }} – LANESRA{% endblock %}
 {% block content %}
 <div class="page-header">
-  <h1 class="page-title">Ticket Details</h1>
-  <a href="{% url 'my_tickets' %}" style="color:var(--text3); font-size:13px;">← Back to tickets</a>
+  <p style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--mint);margin-bottom:6px;">Ticket Details</p>
+  <h1 class="page-title">{{ ticket.purchaser_name }}</h1>
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+    <a href="{% url 'my_tickets' %}" style="font-size:11px;opacity:.5;">← Back to tickets</a>
+    <a href="{% url 'ticket_pdf' ticket.pk %}" class="btn btn-primary" target="_blank">⬇ Download PDF</a>
+  </div>
 </div>
 
 <div class="ticket-header">
-  <div class="ticket-info card" style="flex:1;">
+  <div class="ticket-info card">
     <div class="ticket-id-big">{{ ticket.short_id }}</div>
-    <div style="margin-bottom:1rem;">
+    <div style="margin-bottom:1.2rem;">
       <span class="tag tag-{{ ticket.status }}">{{ ticket.status }}</span>
-      {% if not ticket.is_active %}<span class="tag tag-inactive" style="margin-left:4px;">Inactive</span>{% endif %}
+      {% if not ticket.is_active %}<span class="tag tag-inactive" style="margin-left:6px;">Inactive</span>{% endif %}
     </div>
     <div class="info-row"><span class="info-label">Full ID</span><span class="info-value mono" style="font-size:11px;">{{ ticket.ticket_id }}</span></div>
     <div class="info-row"><span class="info-label">Purchaser</span><span class="info-value">{{ ticket.purchaser_name }}</span></div>
-    {% if ticket.purchaser_email %}
-    <div class="info-row"><span class="info-label">Email</span><span class="info-value">{{ ticket.purchaser_email }}</span></div>
-    {% endif %}
-    {% if ticket.purchaser_phone %}
-    <div class="info-row"><span class="info-label">Phone</span><span class="info-value">{{ ticket.purchaser_phone }}</span></div>
-    {% endif %}
+    {% if ticket.purchaser_email %}<div class="info-row"><span class="info-label">Email</span><span class="info-value">{{ ticket.purchaser_email }}</span></div>{% endif %}
+    {% if ticket.purchaser_phone %}<div class="info-row"><span class="info-label">Phone</span><span class="info-value">{{ ticket.purchaser_phone }}</span></div>{% endif %}
     <div class="info-row"><span class="info-label">Created by</span><span class="info-value">{{ ticket.created_by.username }}</span></div>
-    <div class="info-row"><span class="info-label">Created at</span><span class="info-value">{{ ticket.created_at|date:"M d, Y H:i:s" }}</span></div>
+    <div class="info-row"><span class="info-label">Created at</span><span class="info-value">{{ ticket.created_at|date:"M d, Y H:i" }}</span></div>
     {% if ticket.is_used %}
-    <div class="info-row"><span class="info-label">Validated at</span><span class="info-value" style="color:var(--blue)">{{ ticket.validated_at|date:"M d, Y H:i:s" }}</span></div>
-    <div class="info-row"><span class="info-label">Validated by</span><span class="info-value" style="color:var(--blue)">{{ ticket.validated_by.username }}</span></div>
+    <div class="info-row"><span class="info-label">Validated at</span><span class="info-value" style="color:var(--mint)">{{ ticket.validated_at|date:"M d, Y H:i:s" }}</span></div>
+    <div class="info-row"><span class="info-label">Validated by</span><span class="info-value" style="color:var(--mint)">{{ ticket.validated_by.username }}</span></div>
     {% endif %}
     {% if user.profile.role == 'admin' %}
-    <div style="margin-top:1rem;">
+    <div style="margin-top:1.2rem;">
       <a href="{% url 'toggle_ticket_active' ticket.pk %}" class="btn {% if ticket.is_active %}btn-danger{% else %}btn-success{% endif %} btn-sm">
-        {% if ticket.is_active %}Deactivate{% else %}Activate{% endif %} Ticket
+        {% if ticket.is_active %}Deactivate{% else %}Activate{% endif %}
       </a>
     </div>
     {% endif %}
   </div>
 
   {% if ticket.qr_image %}
-  <div style="text-align:center;">
-    <div class="card" style="display:inline-block; padding:1.5rem;">
-      <div class="card-title" style="text-align:center;">QR Code</div>
-      <div class="qr-wrap">
-        <img src="{{ ticket.qr_image.url }}" alt="QR Code for ticket {{ ticket.short_id }}">
-      </div>
-      <p style="color:var(--text3); font-size:11px; margin-top:8px; text-align:center;">Scan to validate at entry</p>
-    </div>
+  <div class="card" style="display:inline-block;text-align:center;">
+    <div class="card-title">QR Code</div>
+    <div class="qr-wrap"><img src="{{ ticket.qr_image.url }}" alt="QR Code"></div>
+    <p style="font-size:10px;opacity:.35;margin-top:10px;letter-spacing:.1em;">Scan to validate at entry</p>
   </div>
   {% endif %}
 </div>
@@ -52,20 +48,15 @@
 {% if scan_logs %}
 <div class="card">
   <div class="card-title">Scan History</div>
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>Scanned By</th><th>Date & Time</th><th>Result</th></tr></thead>
-      <tbody>
-        {% for log in scan_logs %}
-        <tr>
-          <td>{{ log.scanned_by.username }}</td>
-          <td style="color:var(--text3)">{{ log.scanned_at|date:"M d, Y H:i:s" }}</td>
-          <td><span class="tag tag-{{ log.result }}">{{ log.get_result_display }}</span></td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Scanned By</th><th>Date & Time</th><th>Result</th></tr></thead>
+    <tbody>{% for log in scan_logs %}
+    <tr>
+      <td>{{ log.scanned_by.username }}</td>
+      <td style="opacity:.5;font-size:11px;">{{ log.scanned_at|date:"M d, Y H:i:s" }}</td>
+      <td><span class="tag tag-{{ log.result }}">{{ log.get_result_display }}</span></td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
 </div>
 {% endif %}
 {% endblock %}

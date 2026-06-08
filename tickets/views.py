@@ -279,3 +279,42 @@ def reports(request):
         'scan_data': scan_data, 'sellers': sellers, 'scanners': scanners,
         'recent_logs': recent_logs,
     })
+    
+from django.http import HttpResponse
+from django.template.loader import render_to_string
+from weasyprint import HTML as WeasyHTML
+import base64, os
+
+@login_required
+def ticket_pdf(request, pk):
+    ticket = get_object_or_404(Ticket, pk=pk)
+    profile = getattr(request.user, 'profile', None)
+    if profile and profile.role == 'seller' and ticket.created_by != request.user:
+        messages.error(request, "You can only print your own tickets.")
+        return redirect('my_tickets')
+
+    # Embed QR image as base64 so WeasyPrint can render it
+    qr_b64 = ''
+    if ticket.qr_image:
+        qr_path = ticket.qr_image.path
+        if os.path.exists(qr_path):
+            with open(qr_path, 'rb') as f:
+                qr_b64 = base64.b64encode(f.read()).decode()
+
+    # Embed logo
+    logo_b64 = ''
+    logo_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'images', 'lansera1.jpg')
+    if os.path.exists(logo_path):
+        with open(logo_path, 'rb') as f:
+            logo_b64 = base64.b64encode(f.read()).decode()
+
+    html_string = render_to_string('tickets/ticket_pdf.html', {
+        'ticket': ticket,
+        'qr_b64': qr_b64,
+        'logo_b64': logo_b64,
+    })
+
+    pdf_file = WeasyHTML(string=html_string).write_pdf()
+    response = HttpResponse(pdf_file, content_type='application/pdf')
+    response['Content-Disposition'] = f'filename="LANESRA-Ticket-{ticket.short_id}.pdf"'
+    return response

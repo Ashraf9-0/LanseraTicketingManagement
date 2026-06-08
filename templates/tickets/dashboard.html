@@ -1,9 +1,12 @@
 {% extends 'tickets/base.html' %}
-{% block title %}Dashboard{% endblock %}
+{% block title %}Dashboard – LANESRA{% endblock %}
 {% block content %}
 <div class="page-header">
-  <h1 class="page-title">Dashboard</h1>
-  <p class="page-sub">Welcome back, {{ user.username }}</p>
+  <p style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--mint);margin-bottom:6px;">
+    {% if role == 'seller' %}Ticket Seller{% elif role == 'scanner' %}Scanner{% else %}Administrator{% endif %}
+  </p>
+  <h1 class="page-title">Welcome, {{ user.username }}</h1>
+  <p class="page-sub">LANESRA Ticketing Platform</p>
 </div>
 
 {% if role == 'seller' %}
@@ -13,31 +16,24 @@
   <div class="stat-card"><div class="stat-label">Unused</div><div class="stat-value green">{{ unused_count }}</div></div>
 </div>
 <div class="card">
-  <div class="card-title">My Recent Tickets</div>
+  <div class="card-title">Recent Tickets</div>
   {% if my_tickets %}
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>Ticket ID</th><th>Purchaser</th><th>Status</th><th>Created</th><th></th></tr></thead>
-      <tbody>
-        {% for t in my_tickets %}
-        <tr>
-          <td><span class="mono">{{ t.short_id }}</span></td>
-          <td>{{ t.purchaser_name }}</td>
-          <td><span class="tag tag-{{ t.status }}">{{ t.status }}</span></td>
-          <td style="color:var(--text3)">{{ t.created_at|date:"M d, Y H:i" }}</td>
-          <td><a href="{% url 'ticket_detail' t.pk %}" class="btn btn-secondary btn-sm">View</a></td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% else %}
-  <div class="empty"><div class="empty-icon">🎫</div><p>No tickets yet. <a href="{% url 'create_ticket' %}">Create your first ticket</a></p></div>
-  {% endif %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>Ticket ID</th><th>Purchaser</th><th>Status</th><th>Created</th><th></th></tr></thead>
+    <tbody>{% for t in my_tickets %}
+    <tr>
+      <td><span class="mono">{{ t.short_id }}</span></td>
+      <td>{{ t.purchaser_name }}</td>
+      <td><span class="tag tag-{{ t.status }}">{{ t.status }}</span></td>
+      <td style="opacity:.5;font-size:11px;">{{ t.created_at|date:"M d, Y" }}</td>
+      <td><a href="{% url 'ticket_detail' t.pk %}" class="btn btn-secondary btn-sm">View</a></td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="empty"><div class="empty-icon">🎫</div><p>No tickets yet.</p></div>{% endif %}
 </div>
-<div style="margin-top:1rem;">
+<div style="margin-top:1.2rem;display:flex;gap:8px;">
   <a href="{% url 'create_ticket' %}" class="btn btn-primary">+ New Ticket</a>
-  <a href="{% url 'my_tickets' %}" class="btn btn-secondary" style="margin-left:8px;">View All</a>
+  <a href="{% url 'my_tickets' %}" class="btn btn-secondary">View All</a>
 </div>
 
 {% elif role == 'scanner' %}
@@ -49,25 +45,18 @@
 <div class="card">
   <div class="card-title">Recent Scans</div>
   {% if recent_scans %}
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>Ticket</th><th>Result</th><th>Time</th></tr></thead>
-      <tbody>
-        {% for s in recent_scans %}
-        <tr>
-          <td>{% if s.ticket %}<span class="mono">{{ s.ticket.short_id }}</span>{% else %}<span style="color:var(--text3)">Unknown</span>{% endif %}</td>
-          <td><span class="tag tag-{{ s.result }}">{{ s.get_result_display }}</span></td>
-          <td style="color:var(--text3)">{{ s.scanned_at|date:"M d, Y H:i" }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% else %}
-  <div class="empty"><div class="empty-icon">📷</div><p>No scans yet.</p></div>
-  {% endif %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>Ticket</th><th>Result</th><th>Time</th></tr></thead>
+    <tbody>{% for s in recent_scans %}
+    <tr>
+      <td>{% if s.ticket %}<span class="mono">{{ s.ticket.short_id }}</span>{% else %}<span style="opacity:.4">—</span>{% endif %}</td>
+      <td><span class="tag tag-{{ s.result }}">{{ s.get_result_display }}</span></td>
+      <td style="opacity:.5;font-size:11px;">{{ s.scanned_at|date:"M d, Y H:i" }}</td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="empty"><div class="empty-icon">📷</div><p>No scans yet.</p></div>{% endif %}
 </div>
-<div style="margin-top:1rem;">
+<div style="margin-top:1.2rem;">
   <a href="{% url 'scan_ticket' %}" class="btn btn-primary">📷 Scan Ticket</a>
 </div>
 
@@ -76,53 +65,41 @@
   <div class="stat-card"><div class="stat-label">Total Tickets</div><div class="stat-value yellow">{{ total_tickets }}</div></div>
   <div class="stat-card"><div class="stat-label">Used</div><div class="stat-value blue">{{ used_tickets }}</div></div>
   <div class="stat-card"><div class="stat-label">Unused</div><div class="stat-value green">{{ unused_tickets }}</div></div>
-  <div class="stat-card"><div class="stat-label">Inactive</div><div class="stat-value" style="color:var(--text3)">{{ inactive_tickets }}</div></div>
-  <div class="stat-card"><div class="stat-label">Total Scans</div><div class="stat-value" style="color:var(--blue)">{{ total_scans }}</div></div>
+  <div class="stat-card"><div class="stat-label">Inactive</div><div class="stat-value" style="opacity:.5">{{ inactive_tickets }}</div></div>
+  <div class="stat-card"><div class="stat-label">Total Scans</div><div class="stat-value blue">{{ total_scans }}</div></div>
   <div class="stat-card"><div class="stat-label">Invalid Scans</div><div class="stat-value red">{{ invalid_scans }}</div></div>
 </div>
-
-<div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem;">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
   <div class="card">
     <div class="card-title">Recent Tickets</div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>ID</th><th>Purchaser</th><th>Status</th></tr></thead>
-        <tbody>
-          {% for t in recent_tickets %}
-          <tr>
-            <td><a href="{% url 'ticket_detail' t.pk %}" class="mono">{{ t.short_id }}</a></td>
-            <td>{{ t.purchaser_name }}</td>
-            <td><span class="tag tag-{{ t.status }}">{{ t.status }}</span></td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>ID</th><th>Purchaser</th><th>Status</th></tr></thead>
+      <tbody>{% for t in recent_tickets %}
+      <tr>
+        <td><a href="{% url 'ticket_detail' t.pk %}" class="mono">{{ t.short_id }}</a></td>
+        <td>{{ t.purchaser_name }}</td>
+        <td><span class="tag tag-{{ t.status }}">{{ t.status }}</span></td>
+      </tr>{% endfor %}</tbody>
+    </table></div>
   </div>
   <div class="card">
     <div class="card-title">Recent Scan Activity</div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Ticket</th><th>Scanner</th><th>Result</th></tr></thead>
-        <tbody>
-          {% for s in recent_scans %}
-          <tr>
-            <td>{% if s.ticket %}<span class="mono">{{ s.ticket.short_id }}</span>{% else %}—{% endif %}</td>
-            <td style="color:var(--text2)">{{ s.scanned_by.username }}</td>
-            <td><span class="tag tag-{{ s.result }}">{{ s.get_result_display }}</span></td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Ticket</th><th>Scanner</th><th>Result</th></tr></thead>
+      <tbody>{% for s in recent_scans %}
+      <tr>
+        <td>{% if s.ticket %}<span class="mono">{{ s.ticket.short_id }}</span>{% else %}—{% endif %}</td>
+        <td style="opacity:.6">{{ s.scanned_by.username }}</td>
+        <td><span class="tag tag-{{ s.result }}">{{ s.get_result_display }}</span></td>
+      </tr>{% endfor %}</tbody>
+    </table></div>
   </div>
 </div>
-
-<div style="display:flex; gap:8px; flex-wrap:wrap;">
+<div style="display:flex;gap:8px;flex-wrap:wrap;">
   <a href="{% url 'create_ticket' %}" class="btn btn-primary">+ New Ticket</a>
   <a href="{% url 'scan_ticket' %}" class="btn btn-secondary">📷 Scan</a>
   <a href="{% url 'ticket_management' %}" class="btn btn-secondary">Manage Tickets</a>
-  <a href="{% url 'user_management' %}" class="btn btn-secondary">Manage Users</a>
+  <a href="{% url 'user_management' %}" class="btn btn-secondary">Users</a>
   <a href="{% url 'reports' %}" class="btn btn-secondary">Reports</a>
 </div>
 {% endif %}
