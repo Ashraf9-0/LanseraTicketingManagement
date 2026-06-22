@@ -1,27 +1,33 @@
 {% extends 'tickets/base.html' %}
 {% block title %}Tickets – LANESRA{% endblock %}
 {% block content %}
+
+<a href="{% url 'dashboard' %}" class="back-btn">← Dashboard</a>
+
 <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;">
   <div>
     <p style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--mint);margin-bottom:6px;">Records</p>
     <h1 class="page-title">{% if user.profile.role == 'admin' %}All Tickets{% else %}My Tickets{% endif %}</h1>
-    <p class="page-sub">{{ tickets.count }} ticket{{ tickets.count|pluralize }} found</p>
+    <p class="page-sub">{{ tickets.count }} ticket{{ tickets.count|pluralize }}</p>
   </div>
   {% if user.profile.role != 'scanner' %}
   <a href="{% url 'create_ticket' %}" class="btn btn-primary">+ New Ticket</a>
   {% endif %}
 </div>
+
 <div class="filters">
   <a href="?" class="filter-btn {% if not status_filter %}active{% endif %}">All</a>
   <a href="?status=unused" class="filter-btn {% if status_filter == 'unused' %}active{% endif %}">Unused</a>
   <a href="?status=used"   class="filter-btn {% if status_filter == 'used' %}active{% endif %}">Used</a>
 </div>
-<div class="card">
-  {% if tickets %}
+
+{% if tickets %}
+<!-- Desktop table -->
+<div class="card hide-mobile">
   <div class="table-wrap"><table>
     <thead><tr>
       <th>Ticket ID</th><th>Purchaser</th>
-      {% if user.profile.role == 'admin' %}<th>Created By</th>{% endif %}
+      {% if user.profile.role == 'admin' %}<th>Seller</th>{% endif %}
       <th>Status</th><th>Active</th><th>Created</th><th>Validated</th><th></th>
     </tr></thead>
     <tbody>{% for t in tickets %}
@@ -30,12 +36,32 @@
       <td style="font-weight:500;">{{ t.purchaser_name }}</td>
       {% if user.profile.role == 'admin' %}<td style="opacity:.6">{{ t.created_by.username }}</td>{% endif %}
       <td><span class="tag tag-{{ t.status }}">{{ t.status }}</span></td>
-      <td>{% if t.is_active %}<span style="color:var(--green);font-size:16px;">●</span>{% else %}<span style="opacity:.3;font-size:16px;">●</span>{% endif %}</td>
+      <td>{% if t.is_active %}<span style="color:var(--green)">●</span>{% else %}<span style="opacity:.3">●</span>{% endif %}</td>
       <td style="opacity:.5;font-size:11px;">{{ t.created_at|date:"M d, Y" }}</td>
-      <td style="opacity:.5;font-size:11px;">{% if t.validated_at %}{{ t.validated_at|date:"M d, Y H:i" }}{% else %}—{% endif %}</td>
+      <td style="opacity:.5;font-size:11px;">{% if t.validated_at %}{{ t.validated_at|date:"M d, Y" }}{% else %}—{% endif %}</td>
       <td><a href="{% url 'ticket_detail' t.pk %}" class="btn btn-secondary btn-sm">View</a></td>
     </tr>{% endfor %}</tbody>
   </table></div>
-  {% else %}<div class="empty"><div class="empty-icon">🎫</div><p>No tickets found.</p></div>{% endif %}
 </div>
+<!-- Mobile cards -->
+<div class="ticket-cards">
+  {% for t in tickets %}
+  <div class="ticket-card-item">
+    <div class="ticket-card-top">
+      <div class="ticket-card-name">{{ t.purchaser_name }}</div>
+      <span class="tag tag-{{ t.status }}">{{ t.status }}</span>
+    </div>
+    <div class="ticket-card-fields">
+      <div class="ticket-card-field"><span>Ticket ID</span><span class="mono">{{ t.short_id }}</span></div>
+      <div class="ticket-card-field"><span>Created</span>{{ t.created_at|date:"M d, Y" }}</div>
+      {% if user.profile.role == 'admin' %}<div class="ticket-card-field"><span>Seller</span>{{ t.created_by.username }}</div>{% endif %}
+      <div class="ticket-card-field"><span>Active</span>{% if t.is_active %}Yes{% else %}No{% endif %}</div>
+    </div>
+    <a href="{% url 'ticket_detail' t.pk %}" class="btn btn-secondary btn-sm btn-full">View Ticket</a>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card"><div class="empty"><div class="empty-icon">🎫</div><p>No tickets found.</p></div></div>
+{% endif %}
 {% endblock %}

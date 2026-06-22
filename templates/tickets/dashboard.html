@@ -11,14 +11,22 @@
 
 {% if role == 'seller' %}
 <div class="stats-grid">
-  <div class="stat-card"><div class="stat-label">Created by me</div><div class="stat-value yellow">{{ total_created }}</div></div>
+  <div class="stat-card"><div class="stat-label">Created</div><div class="stat-value yellow">{{ total_created }}</div></div>
   <div class="stat-card"><div class="stat-label">Used</div><div class="stat-value blue">{{ used_count }}</div></div>
   <div class="stat-card"><div class="stat-label">Unused</div><div class="stat-value green">{{ unused_count }}</div></div>
 </div>
+
+<!-- Mobile quick actions -->
+<div style="display:flex;gap:8px;margin-bottom:1.2rem;flex-wrap:wrap;">
+  <a href="{% url 'create_ticket' %}" class="btn btn-primary" style="flex:1;justify-content:center;">+ New Ticket</a>
+  <a href="{% url 'my_tickets' %}" class="btn btn-secondary" style="flex:1;justify-content:center;">View All</a>
+</div>
+
 <div class="card">
   <div class="card-title">Recent Tickets</div>
   {% if my_tickets %}
-  <div class="table-wrap"><table>
+  <!-- Desktop table -->
+  <div class="table-wrap hide-mobile"><table>
     <thead><tr><th>Ticket ID</th><th>Purchaser</th><th>Status</th><th>Created</th><th></th></tr></thead>
     <tbody>{% for t in my_tickets %}
     <tr>
@@ -29,11 +37,25 @@
       <td><a href="{% url 'ticket_detail' t.pk %}" class="btn btn-secondary btn-sm">View</a></td>
     </tr>{% endfor %}</tbody>
   </table></div>
-  {% else %}<div class="empty"><div class="empty-icon">🎫</div><p>No tickets yet.</p></div>{% endif %}
-</div>
-<div style="margin-top:1.2rem;display:flex;gap:8px;">
-  <a href="{% url 'create_ticket' %}" class="btn btn-primary">+ New Ticket</a>
-  <a href="{% url 'my_tickets' %}" class="btn btn-secondary">View All</a>
+  <!-- Mobile cards -->
+  <div class="ticket-cards">
+    {% for t in my_tickets %}
+    <div class="ticket-card-item">
+      <div class="ticket-card-top">
+        <div class="ticket-card-name">{{ t.purchaser_name }}</div>
+        <span class="tag tag-{{ t.status }}">{{ t.status }}</span>
+      </div>
+      <div class="ticket-card-fields">
+        <div class="ticket-card-field"><span>Ticket ID</span><span class="mono">{{ t.short_id }}</span></div>
+        <div class="ticket-card-field"><span>Created</span>{{ t.created_at|date:"M d, Y" }}</div>
+      </div>
+      <a href="{% url 'ticket_detail' t.pk %}" class="btn btn-secondary btn-sm btn-full">View Ticket</a>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty"><div class="empty-icon">🎫</div><p>No tickets yet.</p></div>
+  {% endif %}
 </div>
 
 {% elif role == 'scanner' %}
@@ -42,10 +64,15 @@
   <div class="stat-card"><div class="stat-label">Valid</div><div class="stat-value green">{{ valid_scans }}</div></div>
   <div class="stat-card"><div class="stat-label">Rejected</div><div class="stat-value red">{{ invalid_scans }}</div></div>
 </div>
+
+<div style="margin-bottom:1.2rem;">
+  <a href="{% url 'scan_ticket' %}" class="btn btn-primary btn-full">📷 Scan a Ticket</a>
+</div>
+
 <div class="card">
   <div class="card-title">Recent Scans</div>
   {% if recent_scans %}
-  <div class="table-wrap"><table>
+  <div class="table-wrap hide-mobile"><table>
     <thead><tr><th>Ticket</th><th>Result</th><th>Time</th></tr></thead>
     <tbody>{% for s in recent_scans %}
     <tr>
@@ -54,10 +81,21 @@
       <td style="opacity:.5;font-size:11px;">{{ s.scanned_at|date:"M d, Y H:i" }}</td>
     </tr>{% endfor %}</tbody>
   </table></div>
-  {% else %}<div class="empty"><div class="empty-icon">📷</div><p>No scans yet.</p></div>{% endif %}
-</div>
-<div style="margin-top:1.2rem;">
-  <a href="{% url 'scan_ticket' %}" class="btn btn-primary">📷 Scan Ticket</a>
+  <!-- Mobile cards -->
+  <div class="ticket-cards">
+    {% for s in recent_scans %}
+    <div class="ticket-card-item">
+      <div class="ticket-card-top">
+        <span class="mono">{% if s.ticket %}{{ s.ticket.short_id }}{% else %}Unknown{% endif %}</span>
+        <span class="tag tag-{{ s.result }}">{{ s.get_result_display }}</span>
+      </div>
+      <div style="font-size:11px;opacity:.5;">{{ s.scanned_at|date:"M d, Y H:i" }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty"><div class="empty-icon">📷</div><p>No scans yet.</p></div>
+  {% endif %}
 </div>
 
 {% elif role == 'admin' %}
@@ -69,10 +107,20 @@
   <div class="stat-card"><div class="stat-label">Total Scans</div><div class="stat-value blue">{{ total_scans }}</div></div>
   <div class="stat-card"><div class="stat-label">Invalid Scans</div><div class="stat-value red">{{ invalid_scans }}</div></div>
 </div>
+
+<!-- Mobile quick actions -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1.2rem;">
+  <a href="{% url 'create_ticket' %}" class="btn btn-primary" style="justify-content:center;">+ New Ticket</a>
+  <a href="{% url 'scan_ticket' %}" class="btn btn-secondary" style="justify-content:center;">📷 Scan</a>
+  <a href="{% url 'ticket_management' %}" class="btn btn-secondary" style="justify-content:center;">Manage</a>
+  <a href="{% url 'user_management' %}" class="btn btn-secondary" style="justify-content:center;">Users</a>
+  <a href="{% url 'reports' %}" class="btn btn-secondary" style="grid-column:1/-1;justify-content:center;">📊 Reports</a>
+</div>
+
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
-  <div class="card">
+  <div class="card" style="grid-column: 1/-1 ;">
     <div class="card-title">Recent Tickets</div>
-    <div class="table-wrap"><table>
+    <div class="table-wrap hide-mobile"><table>
       <thead><tr><th>ID</th><th>Purchaser</th><th>Status</th></tr></thead>
       <tbody>{% for t in recent_tickets %}
       <tr>
@@ -81,26 +129,21 @@
         <td><span class="tag tag-{{ t.status }}">{{ t.status }}</span></td>
       </tr>{% endfor %}</tbody>
     </table></div>
+    <div class="ticket-cards">
+      {% for t in recent_tickets %}
+      <div class="ticket-card-item">
+        <div class="ticket-card-top">
+          <div class="ticket-card-name">{{ t.purchaser_name }}</div>
+          <span class="tag tag-{{ t.status }}">{{ t.status }}</span>
+        </div>
+        <div class="ticket-card-fields">
+          <div class="ticket-card-field"><span>ID</span><span class="mono">{{ t.short_id }}</span></div>
+        </div>
+        <a href="{% url 'ticket_detail' t.pk %}" class="btn btn-secondary btn-sm btn-full">View</a>
+      </div>
+      {% endfor %}
+    </div>
   </div>
-  <div class="card">
-    <div class="card-title">Recent Scan Activity</div>
-    <div class="table-wrap"><table>
-      <thead><tr><th>Ticket</th><th>Scanner</th><th>Result</th></tr></thead>
-      <tbody>{% for s in recent_scans %}
-      <tr>
-        <td>{% if s.ticket %}<span class="mono">{{ s.ticket.short_id }}</span>{% else %}—{% endif %}</td>
-        <td style="opacity:.6">{{ s.scanned_by.username }}</td>
-        <td><span class="tag tag-{{ s.result }}">{{ s.get_result_display }}</span></td>
-      </tr>{% endfor %}</tbody>
-    </table></div>
-  </div>
-</div>
-<div style="display:flex;gap:8px;flex-wrap:wrap;">
-  <a href="{% url 'create_ticket' %}" class="btn btn-primary">+ New Ticket</a>
-  <a href="{% url 'scan_ticket' %}" class="btn btn-secondary">📷 Scan</a>
-  <a href="{% url 'ticket_management' %}" class="btn btn-secondary">Manage Tickets</a>
-  <a href="{% url 'user_management' %}" class="btn btn-secondary">Users</a>
-  <a href="{% url 'reports' %}" class="btn btn-secondary">Reports</a>
 </div>
 {% endif %}
 {% endblock %}

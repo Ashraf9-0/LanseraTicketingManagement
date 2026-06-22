@@ -5,6 +5,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-qr-ticketing-secret-key-change-in-production'
 DEBUG = True
 ALLOWED_HOSTS = ['*']
+CSRF_TRUSTED_ORIGINS = ['https://*.ngrok-free.dev']
 
 INSTALLED_APPS = [
     'django.contrib.admin',

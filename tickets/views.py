@@ -10,6 +10,10 @@ from .models import Ticket, ScanLog, UserProfile
 from .forms import TicketCreateForm, UserCreateForm, UserEditForm
 from .utils import generate_qr_code
 from .decorators import seller_or_admin, scanner_or_admin, admin_required
+from django.http import HttpResponse
+from django.template.loader import render_to_string
+from weasyprint import HTML as WeasyHTML
+import base64, os
 import json
 
 
@@ -280,10 +284,7 @@ def reports(request):
         'recent_logs': recent_logs,
     })
     
-from django.http import HttpResponse
-from django.template.loader import render_to_string
-from weasyprint import HTML as WeasyHTML
-import base64, os
+
 
 @login_required
 def ticket_pdf(request, pk):
@@ -303,10 +304,13 @@ def ticket_pdf(request, pk):
 
     # Embed logo
     logo_b64 = ''
-    logo_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'images', 'lansera1.jpg')
-    if os.path.exists(logo_path):
-        with open(logo_path, 'rb') as f:
-            logo_b64 = base64.b64encode(f.read()).decode()
+    base_dir = os.path.dirname(os.path.dirname(__file__))
+    for ext in ['png', 'jpg', 'jpeg']:
+        logo_path = os.path.join(base_dir, 'static', 'images', f'logo.{ext}')
+        if os.path.exists(logo_path):
+            with open(logo_path, 'rb') as f:
+                logo_b64 = base64.b64encode(f.read()).decode()
+            break
 
     html_string = render_to_string('tickets/ticket_pdf.html', {
         'ticket': ticket,

@@ -1,6 +1,8 @@
 {% extends 'tickets/base.html' %}
 {% block title %}Create User – LANESRA{% endblock %}
 {% block content %}
+
+<a href="{% url 'user_management' %}" class="back-btn">← Users</a>
 <div class="page-header">
   <p style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--mint);margin-bottom:6px;">Admin</p>
   <h1 class="page-title">Create User</h1>

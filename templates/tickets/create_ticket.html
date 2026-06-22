@@ -1,30 +1,50 @@
 {% extends 'tickets/base.html' %}
 {% block title %}New Ticket – LANESRA{% endblock %}
 {% block content %}
+
+<a href="{% url 'my_tickets' %}" class="back-btn">← Tickets</a>
+
 <div class="page-header">
   <p style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--mint);margin-bottom:6px;">New Ticket</p>
   <h1 class="page-title">Create & Generate</h1>
   <p class="page-sub">Fill in purchaser details to generate a ticket and QR code</p>
 </div>
+
 <div style="max-width:540px;">
   <div class="card">
-    <form method="post">
+    <form method="post" id="ticketForm" onsubmit="return validatePhone()">
       {% csrf_token %}
       <div class="form-group">
         <label class="form-label">Purchaser Name *</label>
-        <input type="text" name="purchaser_name" class="form-control" placeholder="Full name" required value="{{ form.purchaser_name.value|default:'' }}">
+        <input type="text" name="purchaser_name" class="form-control" placeholder="Full name" required
+          value="{{ form.purchaser_name.value|default:'' }}">
         {% if form.purchaser_name.errors %}<ul class="errorlist">{% for e in form.purchaser_name.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
       </div>
+
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Email</label>
-          <input type="email" name="purchaser_email" class="form-control" placeholder="Optional" value="{{ form.purchaser_email.value|default:'' }}">
+          <input type="email" name="purchaser_email" class="form-control" placeholder="Optional"
+            value="{{ form.purchaser_email.value|default:'' }}">
         </div>
         <div class="form-group">
           <label class="form-label">Phone</label>
-          <input type="text" name="purchaser_phone" class="form-control" placeholder="Optional" value="{{ form.purchaser_phone.value|default:'' }}">
+          <p style="font-size:11px;color:var(--orange);margin-bottom:6px;letter-spacing:.02em;">
+            ⚠ Number should start with 07, exactly 10 digits
+          </p>
+          <input type="tel" name="purchaser_phone" id="phoneInput" class="form-control"
+            placeholder="07XXXXXXXX"
+            value="{{ form.purchaser_phone.value|default:'' }}"
+            maxlength="10"
+            inputmode="numeric"
+            pattern="^07[0-9]{8}$"
+            oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10)">
+          <p id="phoneError" style="font-size:11px;color:var(--red);margin-top:5px;display:none;">
+            Phone number must be exactly 10 digits and start with 07...
+          </p>
         </div>
       </div>
+
       <div style="display:flex;gap:10px;margin-top:.5rem;">
         <button type="submit" class="btn btn-primary">⚡ Generate Ticket & QR</button>
         <a href="{% url 'my_tickets' %}" class="btn btn-secondary">Cancel</a>
@@ -32,4 +52,28 @@
     </form>
   </div>
 </div>
+
+<script>
+function validatePhone() {
+  const input = document.getElementById('phoneInput');
+  const error = document.getElementById('phoneError');
+  const value = input.value.trim();
+
+  // Phone is optional, so only validate if something was typed
+  if (value.length === 0) {
+    error.style.display = 'none';
+    return true;
+  }
+
+  const valid = /^07[0-9]{8}$/.test(value);
+  if (!valid) {
+    error.style.display = 'block';
+    input.focus();
+    return false;
+  }
+  error.style.display = 'none';
+  return true;
+}
+</script>
+
 {% endblock %}

@@ -3,16 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <style>
-  @page {
-    size: A5 landscape;
-    margin: 0;
-  }
-
+  @page { size: A5 landscape; margin: 0; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    background: #184E4A;
+    background: #ffffff;
     width: 210mm;
     height: 148mm;
     overflow: hidden;
@@ -21,223 +17,305 @@
   .ticket {
     width: 210mm;
     height: 148mm;
-    background: linear-gradient(135deg, #184E4A 0%, #123A37 55%, #0e3330 100%);
+    background: #ffffff;
     display: flex;
     flex-direction: column;
-    position: relative;
-    overflow: hidden;
   }
 
-  /* subtle pattern overlay */
-  .ticket::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background-image: radial-gradient(circle at 80% 20%, rgba(142,215,194,0.07) 0%, transparent 50%),
-                      radial-gradient(circle at 10% 80%, rgba(142,215,194,0.04) 0%, transparent 40%);
-  }
-
-  /* TOP BAND */
+  /* ── HEADER ── */
   .ticket-header {
-    padding: 10mm 12mm 8mm;
+    padding: 5mm 10mm 4mm;
     display: flex;
+    align-items: center;
     justify-content: space-between;
-    align-items: center;
-    border-bottom: 0.5pt solid rgba(142,215,194,0.25);
-    position: relative;
+    border-bottom: 3pt solid #184E4A;
+  }
+  .header-logo { display: flex; align-items: center; gap: 7px; }
+  .header-logo img { height: 24px; }
+  .header-logo-text {
+    font-size: 17pt; font-weight: 300;
+    letter-spacing: 0.22em; color: #184E4A; text-transform: uppercase;
+  }
+  .header-event {
+    text-align: right;
+  }
+  .header-event-name {
+    font-size: 9pt; font-weight: 700; letter-spacing: 0.25em;
+    text-transform: uppercase; color: #184E4A;
+  }
+  .header-event-sub {
+    font-size: 6pt; letter-spacing: 0.18em;
+    text-transform: uppercase; color: #8ED7C2; margin-top: 1px;
   }
 
-  .brand { display: flex; align-items: center; gap: 8px; }
-  .brand-logo { height: 28px; }
-  .brand-name {
-    font-size: 20pt;
-    font-weight: 300;
-    letter-spacing: 0.12em;
-    color: #DDE8E4;
+  /* thin green accent line below header */
+  .accent-line {
+    height: 1.5pt;
+    background: linear-gradient(to right, #8ED7C2, #184E4A, #8ED7C2);
   }
 
-  .event-block { text-align: right; }
-  .event-name {
-    font-size: 16pt;
-    font-weight: 300;
-    color: #DDE8E4;
-    letter-spacing: 0.05em;
-  }
-  .event-sub {
-    font-size: 7pt;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-    color: #8ED7C2;
-    margin-top: 2px;
-  }
+  /* ── BODY ── */
+  .ticket-body { flex: 1; display: flex; }
 
-  /* BODY */
-  .ticket-body {
+  /* LEFT */
+  .left-col {
     flex: 1;
-    padding: 8mm 12mm;
+    padding: 5mm 8mm;
     display: flex;
-    gap: 10mm;
-    align-items: center;
+    flex-direction: column;
+    gap: 0;
+    border-right: 1pt solid #e8e8e8;
     position: relative;
   }
 
-  .fields { flex: 1; display: flex; flex-direction: column; gap: 5mm; }
-
-  .field-label {
-    font-size: 6.5pt;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: rgba(221,232,228,0.45);
-    margin-bottom: 1.5px;
-  }
-  .field-value {
-    font-size: 13pt;
-    font-weight: 400;
-    color: #DDE8E4;
-    letter-spacing: 0.02em;
-  }
-  .field-value.mono {
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 11pt;
-    color: #8ED7C2;
-    letter-spacing: 0.08em;
+  .event-name {
+    font-size: 19pt; font-weight: 800;
+    color: #111; letter-spacing: 0.03em;
+    padding-bottom: 3.5mm;
+    border-bottom: 0.5pt solid #d0d0d0;
+    margin-bottom: 3.5mm;
   }
 
-  /* DIVIDER */
-  .divider {
-    width: 0.5pt;
-    background: rgba(142,215,194,0.2);
-    align-self: stretch;
+  /* green dot divider */
+  .divider-row {
+    display: flex; align-items: center; gap: 3mm;
     margin: 2mm 0;
   }
+  .divider-dot { width: 4px; height: 4px; border-radius: 50%; background: #8ED7C2; flex-shrink: 0; }
+  .divider-line { flex: 1; height: 0.5pt; background: #e0e0e0; }
 
-  /* QR */
-  .qr-block { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .field-block { padding: 2.5mm 0; }
+  .field-label {
+    font-size: 5.5pt; font-weight: 700;
+    letter-spacing: 0.22em; text-transform: uppercase; color: #184E4A;
+    margin-bottom: 1.5px;
+  }
+  .field-value { font-size: 11pt; color: #111; font-weight: 400; line-height: 1.3; }
+  .field-value.large { font-size: 13pt; font-weight: 600; }
+
+  .two-col { display: flex; gap: 6mm; }
+  .two-col .field-block { flex: 1; }
+
+  /* green side accent */
+  .left-col::after {
+    content: '';
+    position: absolute;
+    left: 0; top: 20%; bottom: 20%;
+    width: 2.5pt;
+    background: linear-gradient(to bottom, transparent, #8ED7C2, transparent);
+  }
+
+  /* RIGHT */
+  .right-col {
+    width: 60mm;
+    display: flex;
+    flex-direction: column;
+    background: #f7f9f8;
+    border-left: 1pt solid #d8e8e4;
+  }
+
+  .right-top {
+    padding: 4mm 6mm;
+    border-bottom: 0.5pt solid #d8e8e4;
+    text-align: center;
+  }
+  .right-top-accent {
+    height: 2pt;
+    background: linear-gradient(to right, transparent, #8ED7C2, transparent);
+    margin-bottom: 3.5mm;
+  }
+
+  .ref-id {
+    font-size: 11pt; font-weight: 700; color: #111;
+    letter-spacing: 0.1em; font-family: 'Courier New', monospace;
+  }
+  .ref-label {
+    font-size: 5.5pt; letter-spacing: 0.2em;
+    text-transform: uppercase; color: #184E4A;
+    margin-top: 1.5px; margin-bottom: 2px; font-weight: 600;
+  }
+  .ref-value {
+    font-size: 7.5pt; color: #444;
+    font-family: 'Courier New', monospace; letter-spacing: 0.05em;
+  }
+
+  .right-mid {
+    padding: 3mm 6mm;
+    border-bottom: 0.5pt solid #d8e8e4;
+    text-align: center;
+  }
+
+  /* QR section */
+  .right-qr {
+    flex: 1;
+    padding: 3mm 6mm;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2.5mm;
+  }
+
+  .qr-warning {
+    font-size: 5pt; font-weight: 700;
+    letter-spacing: 0.07em; text-transform: uppercase;
+    color: #c0392b; text-align: center; line-height: 1.5;
+    border: 0.5pt solid #c0392b;
+    padding: 2px 5px; border-radius: 2px; width: 100%;
+  }
   .qr-wrap {
-    background: #ffffff;
-    border-radius: 4px;
-    padding: 6px;
+    background: #fff;
+    border: 1pt solid #d8e8e4;
+    border-radius: 3px; padding: 4px;
+    box-shadow: 0 1px 4px rgba(24,78,74,0.08);
   }
-  .qr-wrap img { width: 28mm; height: 28mm; display: block; }
-  .qr-label {
-    font-size: 6pt;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: rgba(221,232,228,0.35);
-  }
+  .qr-wrap img { width: 36mm; height: 36mm; display: block; }
 
-  /* CATEGORY BADGE */
-  .category-badge {
-    display: inline-block;
-    background: rgba(142,215,194,0.12);
-    border: 0.5pt solid rgba(142,215,194,0.35);
-    color: #8ED7C2;
-    font-size: 7.5pt;
-    font-weight: 600;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    padding: 3px 10px;
-    border-radius: 20px;
+  /* ── FOOTER ── */
+  .footer-accent {
+    height: 1.5pt;
+    background: linear-gradient(to right, #8ED7C2, #184E4A, #8ED7C2);
   }
-
-  /* FOOTER */
   .ticket-footer {
-    padding: 4mm 12mm;
-    background: rgba(0,0,0,0.2);
+    padding: 3mm 10mm;
+    background: #184E4A;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-top: 0.5pt solid rgba(142,215,194,0.1);
-    position: relative;
   }
-  .footer-text {
-    font-size: 6.5pt;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: rgba(221,232,228,0.3);
+  .footer-left { font-size: 7pt; color: rgba(221,232,228,0.7); letter-spacing: 0.1em; }
+  .footer-center {
+    text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 1px;
   }
-
-  /* NOTCHES */
-  .notch-left, .notch-right {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 6mm; height: 6mm;
-    background: #184E4A;
-    border-radius: 50%;
+  .footer-tagline {
+    font-size: 5.5pt; letter-spacing: 0.18em;
+    text-transform: uppercase; color: #8ED7C2;
   }
-  .notch-left  { left: -3mm; }
-  .notch-right { right: -3mm; }
+  .footer-contact {
+    font-size: 8pt; font-weight: 600;
+    color: #DDE8E4; letter-spacing: 0.08em;
+  }
+  .footer-right {
+    display: flex; align-items: center; gap: 5px;
+    text-align: right;
+  }
+  .footer-right img { height: 14px; opacity: 0.85; }
+  .footer-right-text {
+    font-size: 9pt; font-weight: 300;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: #DDE8E4;
+  }
 </style>
 </head>
 <body>
 <div class="ticket">
 
+  <!-- HEADER -->
   <div class="ticket-header">
-    <div class="brand">
+    <div class="header-logo">
       {% if logo_b64 %}
-      <img src="data:image/png;base64,{{ logo_b64 }}" alt="LANESRA" class="brand-logo">
+      <img src="data:image/png;base64,{{ logo_b64 }}" alt="LANESRA">
       {% endif %}
-      <span class="brand-name">LANESRA</span>
+      <span class="header-logo-text">Lanesra</span>
     </div>
-    <div class="event-block">
-      <div class="event-name">Afro NETION</div>
-      <div class="event-sub">Presented by LANESRA</div>
+    <div class="header-event">
+      <div class="header-event-name">Afro Netion</div>
+      <div class="header-event-sub">Presented by Lanesra</div>
     </div>
   </div>
+  <div class="accent-line"></div>
 
+  <!-- BODY -->
   <div class="ticket-body">
-    <div class="fields">
 
-      <div>
-        <div class="field-label">Guest Name</div>
-        <div class="field-value">{{ ticket.purchaser_name }}</div>
+    <!-- LEFT -->
+    <div class="left-col">
+      <div class="event-name">AFRO NETION</div>
+
+      <div class="field-block">
+        <div class="field-label">Ticket Type</div>
+        <div class="field-value large">Regular</div>
       </div>
 
-      <div>
-        <div class="field-label">Ticket Number</div>
-        <div class="field-value mono">{{ ticket.short_id }}</div>
+      <div class="divider-row">
+        <div class="divider-dot"></div>
+        <div class="divider-line"></div>
+        <div class="divider-dot"></div>
       </div>
 
-      <div style="display:flex; gap:10mm;">
-        <div>
-          <div class="field-label">Category</div>
-          <div style="margin-top:3px;"><span class="category-badge">Regular</span></div>
+      <div class="field-block">
+        <div class="field-label">Ticket Holder</div>
+        <div class="field-value large">{{ ticket.purchaser_name }}</div>
+      </div>
+
+      <div class="divider-row">
+        <div class="divider-dot"></div>
+        <div class="divider-line"></div>
+        <div class="divider-dot"></div>
+      </div>
+
+      <div class="two-col">
+        <div class="field-block">
+          <div class="field-label">Date and Time</div>
+          <div class="field-value">Wed 20th May 2026<br>14:00 – 20:00 (EAT)</div>
         </div>
-        <div>
-          <div class="field-label">Date & Venue</div>
-          <div class="field-value" style="font-size:10pt;">TBA · Kampala</div>
+        <div class="field-block">
+          <div class="field-label">Location</div>
+          <div class="field-value">Motiv Bugolobi<br>Kampala, Uganda</div>
         </div>
       </div>
 
-      {% if ticket.purchaser_email or ticket.purchaser_phone %}
-      <div>
+      <div class="divider-row">
+        <div class="divider-dot"></div>
+        <div class="divider-line"></div>
+        <div class="divider-dot"></div>
+      </div>
+
+      <div class="field-block">
         <div class="field-label">Contact</div>
-        <div class="field-value" style="font-size:10pt;">
-          {{ ticket.purchaser_email|default:ticket.purchaser_phone }}
+        <div class="field-value">{{ ticket.purchaser_phone|default:"—" }}</div>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="right-col">
+      <div class="right-top-accent"></div>
+      <div class="right-top">
+        <div class="ref-id">{{ ticket.short_id }}</div>
+        <div class="ref-label">Order Reference</div>
+        <div class="ref-value">REF{{ ticket.pk|stringformat:"011d" }}</div>
+      </div>
+      <div class="right-mid">
+        <div class="ref-label">Date Issued</div>
+        <div class="ref-value">{{ ticket.created_at|date:"Y-m-d H:i" }}</div>
+      </div>
+      <div class="right-qr">
+        <div class="qr-warning">⚠ This ticket can only be scanned once</div>
+        {% if qr_b64 %}
+        <div class="qr-wrap">
+          <img src="data:image/png;base64,{{ qr_b64 }}" alt="QR Code">
         </div>
+        {% endif %}
       </div>
-      {% endif %}
-
     </div>
 
-    <div class="divider"></div>
-
-    <div class="qr-block">
-      {% if qr_b64 %}
-      <div class="qr-wrap">
-        <img src="data:image/png;base64,{{ qr_b64 }}" alt="QR Code">
-      </div>
-      {% endif %}
-      <div class="qr-label">Scan to validate</div>
-    </div>
   </div>
 
+  <!-- FOOTER -->
+  <div class="footer-accent"></div>
   <div class="ticket-footer">
-    <div class="notch-left"></div>
-    <span class="footer-text">LANESRA · Official Ticket · Non-transferable</span>
-    <span class="footer-text">Issued {{ ticket.created_at|date:"M d, Y" }}</span>
-    <div class="notch-right"></div>
+    <div class="footer-left">Issued via LANESRA · Non-transferable</div>
+    <div class="footer-center">
+      <div class="footer-tagline">Running your own event? Reach out using.</div>
+      <div class="footer-contact">0762415125</div>
+    </div>
+    <div class="footer-right">
+      {% if logo_b64 %}
+      <img src="data:image/png;base64,{{ logo_b64 }}" alt="LANESRA">
+      {% endif %}
+      <span class="footer-right-text">Lanesra</span>
+    </div>
   </div>
 
 </div>

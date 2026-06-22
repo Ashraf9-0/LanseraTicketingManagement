@@ -9,9 +9,11 @@
   {% block extra_head %}{% endblock %}
 </head>
 <body>
+
   <nav class="navbar">
     <div class="nav-brand">
-      <img src="{% static 'images/lansera1.jpg' %}" alt="LANESRA">      LANESRA
+      <img src="{% static 'images/logo.png' %}" alt="LANESRA" onerror="this.style.display='none'">
+      LANESRA
     </div>
     {% if user.is_authenticated %}
     <div class="nav-links">
@@ -39,8 +41,53 @@
         <button type="submit" class="btn-logout">Sign Out</button>
       </form>
     </div>
+    <button class="hamburger" id="hamburger" onclick="toggleMenu()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
     {% endif %}
   </nav>
+
+  {% if user.is_authenticated %}
+  <div class="mobile-nav" id="mobileNav">
+    {% with role=user.profile.role %}
+    <a href="{% url 'dashboard' %}" onclick="closeMenu()" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+      ◈ Dashboard
+    </a>
+    {% if role == 'seller' or role == 'admin' %}
+    <a href="{% url 'create_ticket' %}" onclick="closeMenu()" class="{% if request.resolver_match.url_name == 'create_ticket' %}active{% endif %}">
+      ✦ New Ticket
+    </a>
+    <a href="{% url 'my_tickets' %}" onclick="closeMenu()" class="{% if request.resolver_match.url_name == 'my_tickets' %}active{% endif %}">
+      ≡ My Tickets
+    </a>
+    {% endif %}
+    {% if role == 'scanner' or role == 'admin' %}
+    <a href="{% url 'scan_ticket' %}" onclick="closeMenu()" class="{% if request.resolver_match.url_name == 'scan_ticket' %}active{% endif %}">
+      📷 Scan Ticket
+    </a>
+    {% endif %}
+    {% if role == 'admin' %}
+    <div class="mobile-nav-divider"></div>
+    <a href="{% url 'ticket_management' %}" onclick="closeMenu()">⚙ Manage Tickets</a>
+    <a href="{% url 'user_management' %}" onclick="closeMenu()">👥 Users</a>
+    <a href="{% url 'reports' %}" onclick="closeMenu()">📊 Reports</a>
+    {% endif %}
+    {% endwith %}
+    <div class="mobile-nav-footer">
+      <div class="mobile-user-info">
+        <div class="mobile-avatar">{{ user.username|first|upper }}</div>
+        <div>
+          <div style="font-size:13px;font-weight:600;">{{ user.username }}</div>
+          <span class="nav-badge badge-{{ user.profile.role }}" style="margin-top:4px;display:inline-block;">{{ user.profile.role }}</span>
+        </div>
+      </div>
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="mobile-logout">Sign Out</button>
+      </form>
+    </div>
+  </div>
+  {% endif %}
 
   <div class="container">
     {% if messages %}
@@ -52,6 +99,22 @@
     {% endif %}
     {% block content %}{% endblock %}
   </div>
+
+  <script>
+    function toggleMenu() {
+      const nav = document.getElementById('mobileNav');
+      const btn = document.getElementById('hamburger');
+      nav.classList.toggle('open');
+      btn.classList.toggle('open');
+      document.body.style.overflow = nav.classList.contains('open') ? 'hidden' : '';
+    }
+    function closeMenu() {
+      document.getElementById('mobileNav').classList.remove('open');
+      document.getElementById('hamburger').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+  </script>
+
   {% block extra_js %}{% endblock %}
 </body>
 </html>

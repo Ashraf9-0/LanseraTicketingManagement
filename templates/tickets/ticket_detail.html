@@ -1,6 +1,8 @@
 {% extends 'tickets/base.html' %}
 {% block title %}Ticket {{ ticket.short_id }} – LANESRA{% endblock %}
 {% block content %}
+
+<a href="{% url 'my_tickets' %}" class="back-btn">← Back to Tickets</a>
 <div class="page-header">
   <p style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--mint);margin-bottom:6px;">Ticket Details</p>
   <h1 class="page-title">{{ ticket.purchaser_name }}</h1>

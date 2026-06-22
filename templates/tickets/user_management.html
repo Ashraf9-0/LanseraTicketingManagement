@@ -1,6 +1,8 @@
 {% extends 'tickets/base.html' %}
 {% block title %}Users – LANESRA{% endblock %}
 {% block content %}
+
+<a href="{% url 'dashboard' %}" class="back-btn">← Dashboard</a>
 <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;">
   <div>
     <p style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--mint);margin-bottom:6px;">Admin</p>

@@ -4,6 +4,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 {% endblock %}
 {% block content %}
+
+<a href="{% url 'dashboard' %}" class="back-btn">← Back to Dashboard</a>
+
 <div class="page-header">
   <p style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--mint);margin-bottom:6px;">Validation</p>
   <h1 class="page-title">Scan Ticket</h1>
@@ -13,7 +16,9 @@
 {% if scan_result %}
 <div class="scan-result {{ scan_result.result }}">
   <div class="scan-result-icon">
-    {% if scan_result.result == 'valid' %}✅{% elif scan_result.result == 'already_used' %}⚠️{% else %}❌{% endif %}
+    {% if scan_result.result == 'valid' %}✅
+    {% elif scan_result.result == 'already_used' %}⚠️
+    {% else %}❌{% endif %}
   </div>
   <div class="scan-result-title">
     {% if scan_result.result == 'valid' %}Entry Granted
@@ -23,64 +28,138 @@
   </div>
   <div class="scan-result-msg">{{ scan_result.message }}</div>
   {% if scan_result.ticket %}
-  <div style="margin-top:1.2rem;padding:1rem;background:rgba(0,0,0,0.25);border-radius:3px;">
+  <div style="margin-top:1rem;padding:1rem;background:rgba(0,0,0,0.25);border-radius:3px;">
     <div style="font-size:11px;opacity:.5;margin-bottom:4px;text-transform:uppercase;letter-spacing:.1em;">Ticket</div>
-    <div style="font-weight:600;">{{ scan_result.ticket.purchaser_name }}</div>
+    <div style="font-weight:600;font-size:15px;">{{ scan_result.ticket.purchaser_name }}</div>
     <div class="mono">{{ scan_result.ticket.short_id }}</div>
     {% if scan_result.result == 'already_used' and scan_result.first_scan %}
     <div style="margin-top:8px;font-size:11px;color:var(--orange);">
       Previously scanned: {{ scan_result.first_scan|date:"M d, Y H:i:s" }}
       {% if scan_result.first_scanner %}by {{ scan_result.first_scanner.username }}{% endif %}
-    </div>{% endif %}
-  </div>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+  <div style="margin-top:1rem;">
+    <button onclick="resetScan()" class="btn btn-secondary btn-full">Scan Another Ticket</button>
+  </div>
 </div>
 {% endif %}
 
-<div style="max-width:500px;">
+<div id="scanSection" {% if scan_result %}style="display:none;"{% endif %}>
   <div class="card" style="margin-bottom:1rem;">
     <div class="card-title">📷 Camera Scanner</div>
-    <div id="reader"></div>
-    <div style="display:flex;gap:8px;margin-top:1rem;">
+    <div id="reader" style="width:100%;"></div>
+    <div style="display:flex;gap:8px;margin-top:1rem;flex-wrap:wrap;">
       <button id="startBtn" onclick="startScan()" class="btn btn-primary">Start Camera</button>
-      <button id="stopBtn" onclick="stopScan()" class="btn btn-secondary" style="display:none;">Stop</button>
+      <button id="stopBtn" onclick="stopScan()" class="btn btn-secondary" style="display:none;">Stop Camera</button>
     </div>
   </div>
+
   <div class="card">
     <div class="card-title">⌨️ Manual Entry</div>
-    <form method="post" id="scanForm">
-      {% csrf_token %}
-      <div class="form-group">
-        <label class="form-label">Token / QR Data</label>
-        <input type="text" name="ticket_token" class="form-control" placeholder="Paste QR code data here…">
-      </div>
-      <button type="submit" class="btn btn-primary">Validate</button>
-    </form>
+    <div class="form-group">
+      <label class="form-label">Token / QR Data</label>
+      <input type="text" id="manualToken" class="form-control" placeholder="Paste or type QR code data here…">
+    </div>
+    <button onclick="triggerConfirm(document.getElementById('manualToken').value)" class="btn btn-primary">Validate Ticket</button>
   </div>
 </div>
 
-<form method="post" id="autoScanForm" style="display:none;">
-  {% csrf_token %}<input type="hidden" name="ticket_token" id="autoToken">
+<!-- CONFIRMATION MODAL -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-card">
+    <div class="modal-icon">🎫</div>
+    <div class="modal-title">Confirm Validation</div>
+    <div class="modal-msg">You are about to mark this ticket as <strong style="color:var(--mint);">USED</strong>. This cannot be undone. Are you sure?</div>
+    <div class="modal-ticket-info" id="modalTicketInfo">
+      <div class="modal-ticket-name" id="modalTicketName">—</div>
+      <div class="modal-ticket-id" id="modalTicketId">—</div>
+    </div>
+    <div class="modal-actions">
+      <button onclick="cancelScan()" class="btn btn-secondary">Cancel</button>
+      <button onclick="confirmScan()" class="btn btn-primary">Yes, Validate</button>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden submit form -->
+<form method="post" id="scanForm" style="display:none;">
+  {% csrf_token %}
+  <input type="hidden" name="ticket_token" id="finalToken">
 </form>
 
 <script>
 let scanner = null;
+let pendingToken = '';
+
 function startScan() {
   document.getElementById('startBtn').style.display = 'none';
   document.getElementById('stopBtn').style.display = 'inline-flex';
   scanner = new Html5Qrcode("reader");
-  scanner.start({ facingMode:"environment" }, { fps:10, qrbox:{width:250,height:250} },
-    (text) => { stopScan(); document.getElementById('autoToken').value = text; document.getElementById('autoScanForm').submit(); },
+  scanner.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: { width: 250, height: 250 } },
+    (text) => {
+      stopScan();
+      triggerConfirm(text);
+    },
     () => {}
   ).catch(() => {
     document.getElementById('startBtn').style.display = 'inline-flex';
     document.getElementById('stopBtn').style.display = 'none';
-    alert('Camera unavailable. Use manual entry.');
+    alert('Camera unavailable. Please use manual entry below.');
   });
 }
+
 function stopScan() {
-  if (scanner) { scanner.stop().catch(()=>{}); scanner = null; }
+  if (scanner) { scanner.stop().catch(() => {}); scanner = null; }
   document.getElementById('startBtn').style.display = 'inline-flex';
   document.getElementById('stopBtn').style.display = 'none';
 }
+
+function triggerConfirm(token) {
+  if (!token || !token.trim()) {
+    alert('Please enter or scan a ticket token first.');
+    return;
+  }
+  pendingToken = token.trim();
+
+  // Try to extract readable info from token (format: TOKEN or TOKEN|NAME|CAT|LANESRA)
+  const parts = pendingToken.split('|');
+  if (parts.length >= 2) {
+    document.getElementById('modalTicketName').textContent = parts[1] || '—';
+    document.getElementById('modalTicketId').textContent = parts[0];
+  } else {
+    document.getElementById('modalTicketName').textContent = 'Ticket';
+    document.getElementById('modalTicketId').textContent = pendingToken.substring(0, 20);
+  }
+
+  document.getElementById('confirmModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function cancelScan() {
+  document.getElementById('confirmModal').classList.remove('open');
+  document.body.style.overflow = '';
+  pendingToken = '';
+}
+
+function confirmScan() {
+  document.getElementById('confirmModal').classList.remove('open');
+  document.body.style.overflow = '';
+  document.getElementById('finalToken').value = pendingToken;
+  document.getElementById('scanForm').submit();
+}
+
+function resetScan() {
+  document.getElementById('scanSection').style.display = 'block';
+  document.querySelector('.scan-result') && (document.querySelector('.scan-result').style.display = 'none');
+}
+
+// Close modal on overlay click
+document.getElementById('confirmModal').addEventListener('click', function(e) {
+  if (e.target === this) cancelScan();
+});
 </script>
 {% endblock %}
