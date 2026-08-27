@@ -38,13 +38,13 @@
     {% endif %}
   </div>
 
-  {% if ticket.qr_image %}
-  <div class="card" style="display:inline-block;text-align:center;">
-    <div class="card-title">QR Code</div>
-    <div class="qr-wrap"><img src="{{ ticket.qr_image.url }}" alt="QR Code"></div>
-    <p style="font-size:10px;opacity:.35;margin-top:10px;letter-spacing:.1em;">Scan to validate at entry</p>
-  </div>
-  {% endif %}
+ {% if qr_b64 %}
+<div class="card" style="display:inline-block;text-align:center;">
+  <div class="card-title">QR Code</div>
+  <div class="qr-wrap"><img src="data:image/png;base64,{{ qr_b64 }}" alt="QR Code"></div>
+  <p style="font-size:10px;opacity:.35;margin-top:10px;letter-spacing:.1em;">Scan to validate at entry</p>
+</div>
+{% endif %}
 </div>
 
 {% if scan_logs %}

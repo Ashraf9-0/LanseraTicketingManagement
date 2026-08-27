@@ -8,7 +8,7 @@ from django.db.models import Count, Q
 from django.http import JsonResponse
 from .models import Ticket, ScanLog, UserProfile
 from .forms import TicketCreateForm, UserCreateForm, UserEditForm
-from .utils import generate_qr_code
+from .utils import generate_qr_code_base64
 from .decorators import seller_or_admin, scanner_or_admin, admin_required
 from django.http import HttpResponse
 from django.template.loader import render_to_string
@@ -77,7 +77,6 @@ def dashboard(request):
 
     return render(request, 'tickets/dashboard.html', context)
 
-
 @login_required
 @seller_or_admin
 def create_ticket(request):
@@ -86,8 +85,6 @@ def create_ticket(request):
         if form.is_valid():
             ticket = form.save(commit=False)
             ticket.created_by = request.user
-            ticket.save()
-            generate_qr_code(ticket)
             ticket.save()
             messages.success(request, f'Ticket created successfully! ID: {ticket.short_id}')
             return redirect('ticket_detail', pk=ticket.pk)
@@ -119,7 +116,8 @@ def ticket_detail(request, pk):
         messages.error(request, "You can only view your own tickets.")
         return redirect('my_tickets')
     scan_logs = ticket.scan_logs.select_related('scanned_by').order_by('-scanned_at')
-    return render(request, 'tickets/ticket_detail.html', {'ticket': ticket, 'scan_logs': scan_logs})
+    qr_b64 = generate_qr_code_base64(ticket.token)
+    return render(request, 'tickets/ticket_detail.html', {'ticket': ticket, 'scan_logs': scan_logs, 'qr_b64': qr_b64})
 
 
 @login_required
@@ -295,12 +293,7 @@ def ticket_pdf(request, pk):
         return redirect('my_tickets')
 
     # Embed QR image as base64 so WeasyPrint can render it
-    qr_b64 = ''
-    if ticket.qr_image:
-        qr_path = ticket.qr_image.path
-        if os.path.exists(qr_path):
-            with open(qr_path, 'rb') as f:
-                qr_b64 = base64.b64encode(f.read()).decode()
+    qr_b64 = generate_qr_code_base64(ticket.token)
 
     # Embed logo
     logo_b64 = ''
