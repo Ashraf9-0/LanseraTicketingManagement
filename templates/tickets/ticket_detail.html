@@ -44,7 +44,7 @@
   <div class="card-title">QR Code</div>
   <div class="qr-wrap"><img src="data:image/png;base64,{{ qr_b64 }}" alt="QR Code"></div>
   <p style="font-size:10px;opacity:.35;margin-top:10px;letter-spacing:.1em;">Scan to validate at entry</p>
-  <p class="mono" style="font-size:10px;opacity:.6;margin-top:12px;word-break:break-all;padding:0 8px;">{{ ticket.token }}</p>
+  <p class="mono" style="font-size:10px;opacity:.6;margin-top:12px;white-space:nowrap;overflow-x:auto;padding:0 8px;">{{ ticket.token }}</p>
   <p style="font-size:9px;opacity:.3;margin-top:2px;letter-spacing:.1em;text-transform:uppercase;">Manual validation token</p>
 </div>
 {% endif %}
