@@ -2,4 +2,7 @@ django>=4.2
 qrcode[pil]
 pillow
 gunicorn
- weasyprint
+weasyprint
+psycopg2-binary
+dj-database-url
+whitenoise
