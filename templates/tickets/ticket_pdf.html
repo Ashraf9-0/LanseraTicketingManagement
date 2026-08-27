@@ -290,13 +290,15 @@
         <div class="ref-label">Date Issued</div>
         <div class="ref-value">{{ ticket.created_at|date:"Y-m-d H:i" }}</div>
       </div>
-      <div class="right-qr">
+            <div class="right-qr">
         <div class="qr-warning">⚠ This ticket can only be scanned once</div>
         {% if qr_b64 %}
         <div class="qr-wrap">
           <img src="data:image/png;base64,{{ qr_b64 }}" alt="QR Code">
         </div>
         {% endif %}
+        <div style="font-size:5.5pt;letter-spacing:0.03em;text-transform:uppercase;color:#184E4A;margin-top:2mm;">Manual Token</div>
+        <div style="font-size:6.5pt;font-family:'Courier New',monospace;color:#444;word-break:break-all;text-align:center;line-height:1.4;">{{ ticket.token }}</div>
       </div>
     </div>
 
