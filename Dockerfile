@@ -22,4 +22,6 @@ COPY . .
 RUN python manage.py collectstatic --noinput
 
 # Render sets $PORT at runtime
-CMD gunicorn ticketing_system.wsgi:application --bind 0.0.0.0:$PORT --workers 3
+CMD python manage.py migrate --noinput && \
+    python manage.py create_admin && \
+    gunicorn ticketing_system.wsgi:application --bind 0.0.0.0:$PORT --workers 3
