@@ -6,7 +6,7 @@ services:
   - type: web
     name: lanesraticket
     runtime: docker
-    plan: starter
+    plan: free
     healthCheckPath: /
     envVars:
       - key: SECRET_KEY
