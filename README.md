@@ -17,13 +17,6 @@ python manage.py runserver
 
 Open http://127.0.0.1:8000
 
-## Demo Accounts
-
-| Username  | Password   | Role       |
-|-----------|------------|------------|
-| admin     | admin123   | Super Admin|
-| seller1   | seller123  | Seller     |
-| scanner1  | scanner123 | Scanner    |
 
 ## Features
 

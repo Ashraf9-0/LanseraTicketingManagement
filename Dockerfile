@@ -22,4 +22,4 @@ COPY . .
 RUN python manage.py collectstatic --noinput
 
 # Render sets $PORT at runtime
-CMD gunicorn tickethub.wsgi:application --bind 0.0.0.0:$PORT --workers 3
+CMD gunicorn ticketing_system.wsgi:application --bind 0.0.0.0:$PORT --workers 3
