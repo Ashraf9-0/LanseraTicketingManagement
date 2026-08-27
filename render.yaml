@@ -1,10 +1,10 @@
 databases:
-  - name: tickethub-db
+  - name: lanesraticket-db
     plan: free
 
 services:
   - type: web
-    name: LanseraTickets
+    name: lanesraticket
     runtime: docker
     plan: starter
     healthCheckPath: /
@@ -14,10 +14,10 @@ services:
       - key: DEBUG
         value: "False"
       - key: ALLOWED_HOSTS
-        value: LanseraTickets.onrender.com
+        value: lanesraticket.onrender.com
       - key: CSRF_TRUSTED_ORIGINS
-        value: https://LanseraTickets.onrender.com
+        value: https://lanesraticket.onrender.com
       - key: DATABASE_URL
         fromDatabase:
-          name: tickethub-db
+          name: lanesraticket-db
           property: connectionString
