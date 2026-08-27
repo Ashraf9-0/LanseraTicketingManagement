@@ -1,7 +1,7 @@
 {% extends 'tickets/base.html' %}
 {% block title %}Ticket {{ ticket.short_id }} – LANESRA{% endblock %}
 {% block content %}
-
+ 
 <a href="{% url 'my_tickets' %}" class="back-btn">← Back to Tickets</a>
 <div class="page-header">
   <p style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--mint);margin-bottom:6px;">Ticket Details</p>
@@ -11,7 +11,7 @@
     <a href="{% url 'ticket_pdf' ticket.pk %}" class="btn btn-primary" target="_blank">⬇ Download PDF</a>
   </div>
 </div>
-
+ 
 <div class="ticket-header">
   <div class="ticket-info card">
     <div class="ticket-id-big">{{ ticket.short_id }}</div>
@@ -21,6 +21,7 @@
     </div>
     <div class="info-row"><span class="info-label">Full ID</span><span class="info-value mono" style="font-size:11px;">{{ ticket.ticket_id }}</span></div>
     <div class="info-row"><span class="info-label">Purchaser</span><span class="info-value">{{ ticket.purchaser_name }}</span></div>
+    <div class="info-row"><span class="info-label">Ticket Type</span><span class="info-value"><span class="tag tag-{{ ticket.ticket_type }}">{{ ticket.get_ticket_type_display }}</span></span></div>
     {% if ticket.purchaser_email %}<div class="info-row"><span class="info-label">Email</span><span class="info-value">{{ ticket.purchaser_email }}</span></div>{% endif %}
     {% if ticket.purchaser_phone %}<div class="info-row"><span class="info-label">Phone</span><span class="info-value">{{ ticket.purchaser_phone }}</span></div>{% endif %}
     <div class="info-row"><span class="info-label">Created by</span><span class="info-value">{{ ticket.created_by.username }}</span></div>
@@ -37,7 +38,7 @@
     </div>
     {% endif %}
   </div>
-
+ 
  {% if qr_b64 %}
 <div class="card" style="display:inline-block;text-align:center;">
   <div class="card-title">QR Code</div>
@@ -46,7 +47,7 @@
 </div>
 {% endif %}
 </div>
-
+ 
 {% if scan_logs %}
 <div class="card">
   <div class="card-title">Scan History</div>

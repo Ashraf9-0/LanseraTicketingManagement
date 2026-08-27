@@ -38,18 +38,20 @@ class Ticket(models.Model):
         (STATUS_USED, 'Used'),
     ]
 
+    TYPE_EARLY_BIRD = 'early_bird'
+    TYPE_REGULAR = 'regular'
+    TYPE_VIP = 'vip'
+    TYPE_CHOICES = [
+        (TYPE_EARLY_BIRD, 'Early Bird'),
+        (TYPE_REGULAR, 'Regular'),
+        (TYPE_VIP, 'VIP'),
+    ]
+
     ticket_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     token = models.CharField(max_length=64, unique=True, editable=False)
+    ticket_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default=TYPE_REGULAR)
     purchaser_name = models.CharField(max_length=200)
-    purchaser_email = models.EmailField(blank=True)
-    purchaser_phone = models.CharField(max_length=50, blank=True)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='created_tickets')
-    created_at = models.DateTimeField(auto_now_add=True)
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=STATUS_UNUSED)
-    is_active = models.BooleanField(default=True)
-    validated_at = models.DateTimeField(null=True, blank=True)
-    validated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='validated_tickets')
-    qr_image = models.ImageField(upload_to='qrcodes/', blank=True)
+    ...
 
     def save(self, *args, **kwargs):
         if not self.token:

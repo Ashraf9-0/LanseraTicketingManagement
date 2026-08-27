@@ -28,13 +28,14 @@
     <thead><tr>
       <th>Ticket ID</th><th>Purchaser</th>
       {% if user.profile.role == 'admin' %}<th>Seller</th>{% endif %}
-      <th>Status</th><th>Active</th><th>Created</th><th>Validated</th><th></th>
+      <th>Type</th><th>Status</th><th>Active</th><th>Created</th><th>Validated</th><th></th>
     </tr></thead>
     <tbody>{% for t in tickets %}
     <tr>
       <td><span class="mono">{{ t.short_id }}</span></td>
       <td style="font-weight:500;">{{ t.purchaser_name }}</td>
       {% if user.profile.role == 'admin' %}<td style="opacity:.6">{{ t.created_by.username }}</td>{% endif %}
+      <td><span class="tag tag-{{ t.ticket_type }}">{{ t.get_ticket_type_display }}</span></td>
       <td><span class="tag tag-{{ t.status }}">{{ t.status }}</span></td>
       <td>{% if t.is_active %}<span style="color:var(--green)">●</span>{% else %}<span style="opacity:.3">●</span>{% endif %}</td>
       <td style="opacity:.5;font-size:11px;">{{ t.created_at|date:"M d, Y" }}</td>
@@ -53,6 +54,7 @@
     </div>
     <div class="ticket-card-fields">
       <div class="ticket-card-field"><span>Ticket ID</span><span class="mono">{{ t.short_id }}</span></div>
+      <div class="ticket-card-field"><span>Type</span><span class="tag tag-{{ t.ticket_type }}">{{ t.get_ticket_type_display }}</span></div>
       <div class="ticket-card-field"><span>Created</span>{{ t.created_at|date:"M d, Y" }}</div>
       {% if user.profile.role == 'admin' %}<div class="ticket-card-field"><span>Seller</span>{{ t.created_by.username }}</div>{% endif %}
       <div class="ticket-card-field"><span>Active</span>{% if t.is_active %}Yes{% else %}No{% endif %}</div>

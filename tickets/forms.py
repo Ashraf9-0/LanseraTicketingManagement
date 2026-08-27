@@ -7,8 +7,9 @@ from .models import Ticket, UserProfile
 class TicketCreateForm(forms.ModelForm):
     class Meta:
         model = Ticket
-        fields = ['purchaser_name', 'purchaser_email', 'purchaser_phone']
+        fields = ['ticket_type', 'purchaser_name', 'purchaser_email', 'purchaser_phone']
         widgets = {
+            'ticket_type': forms.Select(attrs={'class': 'form-control'}),
             'purchaser_name': forms.TextInput(attrs={'placeholder': 'Full name'}),
             'purchaser_email': forms.EmailInput(attrs={'placeholder': 'Email (optional)'}),
             'purchaser_phone': forms.TextInput(attrs={'placeholder': 'Phone (optional)'}),

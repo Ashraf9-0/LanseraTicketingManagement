@@ -23,12 +23,13 @@
 <div class="card">
   {% if tickets %}
   <div class="table-wrap"><table>
-    <thead><tr><th>Ticket ID</th><th>Purchaser</th><th>Seller</th><th>Status</th><th>Active</th><th>Created</th><th>Actions</th></tr></thead>
+    <thead><tr><th>Ticket ID</th><th>Purchaser</th><th>Seller</th><th>Type</th><th>Status</th><th>Active</th><th>Created</th><th>Actions</th></tr></thead>
     <tbody>{% for t in tickets %}
     <tr>
       <td><span class="mono">{{ t.short_id }}</span></td>
       <td style="font-weight:500;">{{ t.purchaser_name }}</td>
       <td style="opacity:.6">{{ t.created_by.username }}</td>
+      <td><span class="tag tag-{{ t.ticket_type }}">{{ t.get_ticket_type_display }}</span></td>
       <td><span class="tag tag-{{ t.status }}">{{ t.status }}</span></td>
       <td>
         <a href="{% url 'toggle_ticket_active' t.pk %}" class="tag {% if t.is_active %}tag-unused{% else %}tag-inactive{% endif %}" style="cursor:pointer;">

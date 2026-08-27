@@ -74,6 +74,9 @@ def dashboard(request):
         context['sellers'] = User.objects.filter(profile__role='seller').annotate(
             ticket_count=Count('created_tickets')
         )
+        context['early_bird_count'] = Ticket.objects.filter(ticket_type='early_bird').count()
+        context['regular_count'] = Ticket.objects.filter(ticket_type='regular').count()
+        context['vip_count'] = Ticket.objects.filter(ticket_type='vip').count()
 
     return render(request, 'tickets/dashboard.html', context)
 

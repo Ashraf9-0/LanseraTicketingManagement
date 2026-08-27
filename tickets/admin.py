@@ -3,8 +3,8 @@ from .models import Ticket, ScanLog, UserProfile
 
 @admin.register(Ticket)
 class TicketAdmin(admin.ModelAdmin):
-    list_display = ['short_id', 'purchaser_name', 'status', 'is_active', 'created_by', 'created_at']
-    list_filter = ['status', 'is_active']
+    list_display = ['short_id', 'purchaser_name', 'ticket_type', 'status', 'is_active', 'created_by', 'created_at']
+    list_filter = ['ticket_type', 'status', 'is_active']
     search_fields = ['purchaser_name', 'ticket_id']
 
 @admin.register(ScanLog)
