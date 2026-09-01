@@ -2,6 +2,8 @@ from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from .models import Ticket, UserProfile
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 
 
 class TicketCreateForm(forms.ModelForm):
@@ -43,3 +45,30 @@ class ScanForm(forms.Form):
         widget=forms.HiddenInput(),
         required=False
     )
+    
+class AdminPasswordChangeForm(forms.Form):
+    """Lets an admin set a new password for any user without knowing the old one."""
+    password1 = forms.CharField(
+        label='New password',
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'autocomplete': 'new-password'})
+    )
+    password2 = forms.CharField(
+        label='Confirm new password',
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'autocomplete': 'new-password'})
+    )
+
+    def clean(self):
+        cleaned = super().clean()
+        p1 = cleaned.get('password1')
+        p2 = cleaned.get('password2')
+
+        if p1 and p2 and p1 != p2:
+            self.add_error('password2', "The two passwords don't match.")
+
+        if p1:
+            try:
+                validate_password(p1)
+            except ValidationError as e:
+                self.add_error('password1', e)
+
+        return cleaned

@@ -37,7 +37,21 @@
         </a>
       </td>
       <td style="opacity:.5;font-size:11px;">{{ t.created_at|date:"M d, Y" }}</td>
-      <td><a href="{% url 'ticket_detail' t.pk %}" class="btn btn-secondary btn-sm">View</a></td>
+      <td style="white-space:nowrap;">
+        <div style="display:flex;gap:6px;align-items:center;">
+          <a href="{% url 'ticket_detail' t.pk %}" class="btn btn-secondary btn-sm">View</a>
+          {% if not t.is_active %}
+          <form method="post" action="{% url 'delete_ticket' t.pk %}" style="display:inline;margin:0;"
+                onsubmit="return confirm('Permanently delete ticket {{ t.short_id }} for {{ t.purchaser_name }}?\n\nThis cannot be undone.');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm"
+                    style="background:transparent;border:1px solid rgba(224,122,122,.45);color:#e07a7a;">
+              Delete
+            </button>
+          </form>
+          {% endif %}
+          </div>
+      </td>
     </tr>{% endfor %}</tbody>
   </table></div>
   {% else %}<div class="empty"><div class="empty-icon">🎫</div><p>No tickets match your filters.</p></div>{% endif %}

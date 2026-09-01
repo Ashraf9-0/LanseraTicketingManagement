@@ -15,6 +15,8 @@ from django.template.loader import render_to_string
 from weasyprint import HTML as WeasyHTML
 import base64, os
 import json
+from django.contrib.auth import login, logout, authenticate, update_session_auth_hash
+from .forms import TicketCreateForm, UserCreateForm, UserEditForm, AdminPasswordChangeForm
 
 
 def login_view(request):
@@ -210,6 +212,30 @@ def toggle_ticket_active(request, pk):
 
 @login_required
 @admin_required
+def delete_ticket(request, pk):
+    ticket = get_object_or_404(Ticket, pk=pk)
+
+    if request.method != 'POST':
+        messages.error(request, 'Deletion must be confirmed from the ticket list.')
+        return redirect('ticket_management')
+
+    if ticket.is_active:
+        messages.error(
+            request,
+            f'Ticket {ticket.short_id} is still active. Deactivate it first, then delete.'
+        )
+        return redirect('ticket_management')
+
+    short_id = ticket.short_id
+    name = ticket.purchaser_name
+    # ScanLog.ticket is SET_NULL, so scan history is preserved as an orphaned record.
+    ticket.delete()
+    messages.success(request, f'Ticket {short_id} ({name}) was permanently deleted.')
+    return redirect('ticket_management')
+
+
+@login_required
+@admin_required
 def user_management(request):
     users = User.objects.select_related('profile').order_by('username')
     return render(request, 'tickets/user_management.html', {'users': users})
@@ -251,6 +277,36 @@ def edit_user(request, pk):
             form.fields['role'].initial = user.profile.role
     return render(request, 'tickets/edit_user.html', {'form': form, 'edited_user': user})
 
+
+@login_required
+@admin_required
+def change_user_password(request, pk):
+    target_user = get_object_or_404(User, pk=pk)
+
+    if request.method == 'POST':
+        form = AdminPasswordChangeForm(request.POST)
+        if form.is_valid():
+            target_user.set_password(form.cleaned_data['password1'])
+            target_user.save()
+
+            if target_user.pk == request.user.pk:
+                # Keep the admin logged in after changing their own password
+                update_session_auth_hash(request, target_user)
+                messages.success(request, 'Your password has been updated.')
+            else:
+                messages.success(
+                    request,
+                    f'Password for {target_user.username} has been reset. '
+                    f'They will need to log in again with the new password.'
+                )
+            return redirect('user_management')
+    else:
+        form = AdminPasswordChangeForm()
+
+    return render(request, 'tickets/change_password.html', {
+        'form': form,
+        'target_user': target_user,
+    })    
 
 @login_required
 @admin_required

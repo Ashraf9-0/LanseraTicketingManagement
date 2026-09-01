@@ -35,8 +35,9 @@
           <span class="form-label" style="margin:0;">Account Active</span>
         </label>
       </div>
-      <div style="display:flex;gap:10px;">
+        <div style="display:flex;gap:10px;">
         <button type="submit" class="btn btn-primary">Save Changes</button>
+        <a href="{% url 'change_user_password' edited_user.pk %}" class="btn btn-secondary">Change Password</a>
         <a href="{% url 'user_management' %}" class="btn btn-secondary">Cancel</a>
       </div>
     </form>

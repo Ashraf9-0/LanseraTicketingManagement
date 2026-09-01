@@ -20,7 +20,12 @@
       <td style="opacity:.6">{{ u.email|default:"—" }}</td>
       <td>{% if u.profile %}<span class="tag tag-{{ u.profile.role }}">{{ u.profile.get_role_display }}</span>{% else %}<span class="tag tag-inactive">No role</span>{% endif %}</td>
       <td>{% if u.is_active %}<span style="color:var(--green);font-size:12px;">● Active</span>{% else %}<span style="opacity:.35;font-size:12px;">● Inactive</span>{% endif %}</td>
-      <td><a href="{% url 'edit_user' u.pk %}" class="btn btn-secondary btn-sm">Edit</a></td>
+      <td style="white-space:nowrap;">
+        <div style="display:flex;gap:6px;">
+          <a href="{% url 'edit_user' u.pk %}" class="btn btn-secondary btn-sm">Edit</a>
+          <a href="{% url 'change_user_password' u.pk %}" class="btn btn-secondary btn-sm">Password</a>
+        </div>
+      </td>
     </tr>{% endfor %}</tbody>
   </table></div>
 </div>
