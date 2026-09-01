@@ -79,6 +79,7 @@
   </div>
   {% endfor %}
 </div>
+{% include 'tickets/_pagination.html' %}
 {% else %}
 <div class="card"><div class="empty"><div class="empty-icon">🎫</div>
   <p>{% if search or status_filter or type_filter %}No tickets match your filters.{% else %}{{ seller.username }} hasn't created any tickets yet.{% endif %}</p>

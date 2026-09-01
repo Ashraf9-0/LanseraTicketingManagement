@@ -7,8 +7,7 @@
   <div>
     <p style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--mint);margin-bottom:6px;">Admin</p>
     <h1 class="page-title">Ticket Management</h1>
-    <p class="page-sub">{{ tickets.count }} ticket{{ tickets.count|pluralize }}</p>
-  </div>
+    <p class="page-sub">{{ page_obj.paginator.count }} ticket{{ page_obj.paginator.count|pluralize }}</p>  </div>
   <a href="{% url 'create_ticket' %}" class="btn btn-primary">+ New Ticket</a>
 </div>
 <form method="get" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.5rem;align-items:center;">
@@ -55,4 +54,5 @@
   </table></div>
   {% else %}<div class="empty"><div class="empty-icon">🎫</div><p>No tickets match your filters.</p></div>{% endif %}
 </div>
+{% include 'tickets/_pagination.html' %}
 {% endblock %}

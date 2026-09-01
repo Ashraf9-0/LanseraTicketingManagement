@@ -5,6 +5,8 @@ from django.contrib import messages
 from django.contrib.auth import login, logout, authenticate, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -12,7 +14,6 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from weasyprint import HTML as WeasyHTML
-from django.db import transaction
 
 from .decorators import seller_or_admin, scanner_or_admin, admin_required
 from .forms import (
@@ -24,9 +25,19 @@ from .forms import (
 from .models import Ticket, ScanLog, UserProfile
 from .utils import generate_qr_code_base64
 
+TICKETS_PER_PAGE = 50
+
 ROLE_SELLER = 'seller'
 ROLE_SCANNER = 'scanner'
 ROLE_ADMIN = 'admin'
+
+
+def _paginate(request, queryset, per_page=TICKETS_PER_PAGE):
+    """Return (page, querystring) where querystring preserves all filters except page."""
+    page = Paginator(queryset, per_page).get_page(request.GET.get('page'))
+    params = request.GET.copy()
+    params.pop('page', None)
+    return page, params.urlencode()
 
 
 def _safe_redirect(request, fallback):
@@ -37,8 +48,6 @@ def _safe_redirect(request, fallback):
     ):
         return redirect(target)
     return redirect(fallback)
-
-
 # ---------------------------------------------------------------- auth
 
 def login_view(request):
