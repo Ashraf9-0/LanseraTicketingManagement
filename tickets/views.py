@@ -12,6 +12,7 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from weasyprint import HTML as WeasyHTML
+from django.db import transaction
 
 from .decorators import seller_or_admin, scanner_or_admin, admin_required
 from .forms import (
@@ -214,7 +215,8 @@ def validate_ticket_token(token, user):
         return {'result': ScanLog.RESULT_INVALID, 'message': 'No ticket data received.', 'ticket': None}
 
     try:
-        ticket = Ticket.objects.get(token=token)
+        with transaction.atomic():
+            return _validate_locked(token, user)
     except Ticket.DoesNotExist:
         ScanLog.objects.create(
             scanned_by=user, result=ScanLog.RESULT_INVALID,
@@ -225,6 +227,11 @@ def validate_ticket_token(token, user):
             'message': 'Ticket not found. It may be forged or tampered.',
             'ticket': None,
         }
+
+
+def _validate_locked(token, user):
+    """Row-locked validation. Must run inside transaction.atomic()."""
+    ticket = Ticket.objects.select_for_update().get(token=token)
 
     if not ticket.is_active:
         ScanLog.objects.create(
@@ -248,7 +255,6 @@ def validate_ticket_token(token, user):
             'first_scanner': ticket.validated_by,
         }
 
-    # Valid — mark as used.
     ticket.status = Ticket.STATUS_USED
     ticket.validated_at = timezone.now()
     ticket.validated_by = user
