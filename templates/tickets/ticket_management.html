@@ -28,8 +28,7 @@
     <tr>
       <td><span class="mono">{{ t.short_id }}</span></td>
       <td style="font-weight:500;">{{ t.purchaser_name }}</td>
-      <td style="opacity:.6">{{ t.created_by.username }}</td>
-      <td><span class="tag tag-{{ t.ticket_type }}">{{ t.get_ticket_type_display }}</span></td>
+      <td><a href="{% url 'user_tickets' t.created_by.pk %}" style="opacity:.75;color:var(--mint);">{{ t.created_by.username }}</a></td>      <td><span class="tag tag-{{ t.ticket_type }}">{{ t.get_ticket_type_display }}</span></td>
       <td><span class="tag tag-{{ t.status }}">{{ t.status }}</span></td>
       <td>
         <a href="{% url 'toggle_ticket_active' t.pk %}" class="tag {% if t.is_active %}tag-unused{% else %}tag-inactive{% endif %}" style="cursor:pointer;">

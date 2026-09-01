@@ -1,0 +1,87 @@
+{% extends 'tickets/base.html' %}
+{% block title %}{{ seller.username }}'s Tickets – LANESRA{% endblock %}
+{% block content %}
+
+<a href="{% url 'user_management' %}" class="back-btn">← Users</a>
+
+<div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;">
+  <div>
+    <p style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--mint);margin-bottom:6px;">{% if seller.profile.is_seller %}Seller Record{% else %}User Record{% endif %}</p>
+    <h1 class="page-title">{{ seller.username }}</h1>
+    <p class="page-sub">
+      {% if seller.profile %}<span class="tag tag-{{ seller.profile.role }}">{{ seller.profile.get_role_display }}</span>{% endif %}
+      {% if seller.email %}<span style="opacity:.5;margin-left:8px;">{{ seller.email }}</span>{% endif %}
+      {% if not seller.is_active %}<span class="tag tag-inactive" style="margin-left:8px;">Account disabled</span>{% endif %}
+    </p>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <a href="{% url 'edit_user' seller.pk %}" class="btn btn-secondary btn-sm">Edit User</a>
+    <a href="{% url 'change_user_password' seller.pk %}" class="btn btn-secondary btn-sm">Password</a>
+  </div>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card"><div class="stat-label">Total Sold</div><div class="stat-value yellow">{{ stats.total }}</div></div>
+  <div class="stat-card"><div class="stat-label">Used</div><div class="stat-value blue">{{ stats.used }}</div></div>
+  <div class="stat-card"><div class="stat-label">Unused</div><div class="stat-value green">{{ stats.unused }}</div></div>
+  <div class="stat-card"><div class="stat-label">Inactive</div><div class="stat-value" style="opacity:.5">{{ stats.inactive }}</div></div>
+  <div class="stat-card"><div class="stat-label">Early Bird</div><div class="stat-value" style="color:var(--mint)">{{ stats.early_bird }}</div></div>
+  <div class="stat-card"><div class="stat-label">Regular</div><div class="stat-value">{{ stats.regular }}</div></div>
+  <div class="stat-card"><div class="stat-label">VIP</div><div class="stat-value yellow">{{ stats.vip }}</div></div>
+</div>
+
+<form method="get" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.5rem;align-items:center;">
+  <input type="text" name="search" class="search-input" placeholder="Search purchaser, ID, email, phone…" value="{{ search }}">
+  <button type="submit" class="btn btn-secondary btn-sm">Search</button>
+  <a href="?" class="filter-btn {% if not status_filter and not type_filter %}active{% endif %}">All</a>
+  <a href="?status=unused" class="filter-btn {% if status_filter == 'unused' %}active{% endif %}">Unused</a>
+  <a href="?status=used"   class="filter-btn {% if status_filter == 'used' %}active{% endif %}">Used</a>
+  <a href="?type=early_bird" class="filter-btn {% if type_filter == 'early_bird' %}active{% endif %}">Early Bird</a>
+  <a href="?type=regular"    class="filter-btn {% if type_filter == 'regular' %}active{% endif %}">Regular</a>
+  <a href="?type=vip"        class="filter-btn {% if type_filter == 'vip' %}active{% endif %}">VIP</a>
+</form>
+
+{% if tickets %}
+<div class="card hide-mobile">
+  <div class="table-wrap"><table>
+    <thead><tr>
+      <th>Ticket ID</th><th>Purchaser</th><th>Phone</th><th>Type</th><th>Status</th><th>Active</th><th>Created</th><th></th>
+    </tr></thead>
+    <tbody>{% for t in tickets %}
+    <tr>
+      <td><span class="mono">{{ t.short_id }}</span></td>
+      <td style="font-weight:500;">{{ t.purchaser_name }}</td>
+      <td style="opacity:.6">{{ t.purchaser_phone|default:"—" }}</td>
+      <td><span class="tag tag-{{ t.ticket_type }}">{{ t.get_ticket_type_display }}</span></td>
+      <td><span class="tag tag-{{ t.status }}">{{ t.status }}</span></td>
+      <td>{% if t.is_active %}<span style="color:var(--green)">●</span>{% else %}<span style="opacity:.3">●</span>{% endif %}</td>
+      <td style="opacity:.5;font-size:11px;">{{ t.created_at|date:"M d, Y" }}</td>
+      <td><a href="{% url 'ticket_detail' t.pk %}" class="btn btn-secondary btn-sm">View</a></td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+</div>
+
+<div class="ticket-cards">
+  {% for t in tickets %}
+  <div class="ticket-card-item">
+    <div class="ticket-card-top">
+      <div class="ticket-card-name">{{ t.purchaser_name }}</div>
+      <span class="tag tag-{{ t.status }}">{{ t.status }}</span>
+    </div>
+    <div class="ticket-card-fields">
+      <div class="ticket-card-field"><span>Ticket ID</span><span class="mono">{{ t.short_id }}</span></div>
+      <div class="ticket-card-field"><span>Type</span><span class="tag tag-{{ t.ticket_type }}">{{ t.get_ticket_type_display }}</span></div>
+      <div class="ticket-card-field"><span>Phone</span>{{ t.purchaser_phone|default:"—" }}</div>
+      <div class="ticket-card-field"><span>Created</span>{{ t.created_at|date:"M d, Y" }}</div>
+      <div class="ticket-card-field"><span>Active</span>{% if t.is_active %}Yes{% else %}No{% endif %}</div>
+    </div>
+    <a href="{% url 'ticket_detail' t.pk %}" class="btn btn-secondary btn-sm btn-full">View Ticket</a>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card"><div class="empty"><div class="empty-icon">🎫</div>
+  <p>{% if search or status_filter or type_filter %}No tickets match your filters.{% else %}{{ seller.username }} hasn't created any tickets yet.{% endif %}</p>
+</div></div>
+{% endif %}
+{% endblock %}

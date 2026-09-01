@@ -22,6 +22,7 @@ urlpatterns = [
     path('admin-panel/users/create/', views.create_user, name='create_user'),
     path('admin-panel/users/<int:pk>/edit/', views.edit_user, name='edit_user'),
     path('admin-panel/users/<int:pk>/password/', views.change_user_password, name='change_user_password'),
+    path('admin-panel/users/<int:pk>/tickets/', views.user_tickets, name='user_tickets'),
     path('admin-panel/reports/', views.reports, name='reports'),
 
     # PDF

@@ -268,7 +268,11 @@ def ticket_management(request):
     status_filter = request.GET.get('status', '')
     active_filter = request.GET.get('active', '')
     search = request.GET.get('search', '').strip()
+    seller_filter = request.GET.get('seller', '')
+    search = request.GET.get('search', '').strip()
 
+    if seller_filter.isdigit():
+        tickets = tickets.filter(created_by_id=int(seller_filter))
     if status_filter in (Ticket.STATUS_USED, Ticket.STATUS_UNUSED):
         tickets = tickets.filter(status=status_filter)
     if active_filter == 'active':
@@ -288,6 +292,7 @@ def ticket_management(request):
         'status_filter': status_filter,
         'active_filter': active_filter,
         'search': search,
+        'seller_filter': seller_filter,
     })
 
 
@@ -330,8 +335,70 @@ def delete_ticket(request, pk):
 @login_required
 @admin_required
 def user_management(request):
-    users = User.objects.select_related('profile').order_by('username')
-    return render(request, 'tickets/user_management.html', {'users': users})
+    search = request.GET.get('search', '').strip()
+    role_filter = request.GET.get('role', '')
+
+    users = User.objects.select_related('profile').annotate(
+        ticket_count=Count('created_tickets'),
+    )
+    if search:
+        users = users.filter(
+            Q(username__icontains=search) |
+            Q(email__icontains=search) |
+            Q(first_name__icontains=search) |
+            Q(last_name__icontains=search)
+        )
+    if role_filter in (ROLE_SELLER, ROLE_SCANNER, ROLE_ADMIN):
+        users = users.filter(profile__role=role_filter)
+
+    return render(request, 'tickets/user_management.html', {
+        'users': users.order_by('username'),
+        'search': search,
+        'role_filter': role_filter,
+    })
+
+
+@login_required
+@admin_required
+def user_tickets(request, pk):
+    seller = get_object_or_404(User.objects.select_related('profile'), pk=pk)
+    all_tickets = Ticket.objects.filter(created_by=seller)
+
+    stats = all_tickets.aggregate(
+        total=Count('id'),
+        used=Count('id', filter=Q(status=Ticket.STATUS_USED)),
+        unused=Count('id', filter=Q(status=Ticket.STATUS_UNUSED)),
+        inactive=Count('id', filter=Q(is_active=False)),
+        early_bird=Count('id', filter=Q(ticket_type=Ticket.TYPE_EARLY_BIRD)),
+        regular=Count('id', filter=Q(ticket_type=Ticket.TYPE_REGULAR)),
+        vip=Count('id', filter=Q(ticket_type=Ticket.TYPE_VIP)),
+    )
+
+    tickets = all_tickets.select_related('validated_by')
+    status_filter = request.GET.get('status', '')
+    type_filter = request.GET.get('type', '')
+    search = request.GET.get('search', '').strip()
+
+    if status_filter in (Ticket.STATUS_USED, Ticket.STATUS_UNUSED):
+        tickets = tickets.filter(status=status_filter)
+    if type_filter in (Ticket.TYPE_EARLY_BIRD, Ticket.TYPE_REGULAR, Ticket.TYPE_VIP):
+        tickets = tickets.filter(ticket_type=type_filter)
+    if search:
+        tickets = tickets.filter(
+            Q(purchaser_name__icontains=search) |
+            Q(ticket_id__icontains=search) |
+            Q(purchaser_email__icontains=search) |
+            Q(purchaser_phone__icontains=search)
+        )
+
+    return render(request, 'tickets/user_tickets.html', {
+        'seller': seller,
+        'tickets': tickets.order_by('-created_at'),
+        'stats': stats,
+        'status_filter': status_filter,
+        'type_filter': type_filter,
+        'search': search,
+    })
 
 
 @login_required
