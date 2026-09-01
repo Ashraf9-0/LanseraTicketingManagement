@@ -182,11 +182,13 @@ def my_tickets(request):
     if status_filter in (Ticket.STATUS_USED, Ticket.STATUS_UNUSED):
         tickets = tickets.filter(status=status_filter)
 
+    page_obj, querystring = _paginate(request, tickets.order_by('-created_at'))
     return render(request, 'tickets/my_tickets.html', {
-        'tickets': tickets.order_by('-created_at'),
+        'tickets': page_obj.object_list,
+        'page_obj': page_obj,
+        'querystring': querystring,
         'status_filter': status_filter,
     })
-
 
 @login_required
 def ticket_detail(request, pk):
@@ -302,8 +304,11 @@ def ticket_management(request):
             Q(purchaser_phone__icontains=search)
         )
 
+    page_obj, querystring = _paginate(request, tickets.order_by('-created_at'))
     return render(request, 'tickets/ticket_management.html', {
-        'tickets': tickets.order_by('-created_at'),
+        'tickets': page_obj.object_list,
+        'page_obj': page_obj,
+        'querystring': querystring,
         'status_filter': status_filter,
         'active_filter': active_filter,
         'search': search,
@@ -406,9 +411,12 @@ def user_tickets(request, pk):
             Q(purchaser_phone__icontains=search)
         )
 
+    page_obj, querystring = _paginate(request, tickets.order_by('-created_at'))
     return render(request, 'tickets/user_tickets.html', {
         'seller': seller,
-        'tickets': tickets.order_by('-created_at'),
+        'tickets': page_obj.object_list,
+        'page_obj': page_obj,
+        'querystring': querystring,
         'stats': stats,
         'status_filter': status_filter,
         'type_filter': type_filter,
