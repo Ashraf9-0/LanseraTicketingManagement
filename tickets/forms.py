@@ -17,6 +17,14 @@ class TicketCreateForm(forms.ModelForm):
             'purchaser_phone': forms.TextInput(attrs={'placeholder': 'Phone (optional)'}),
         }
 
+    def clean_purchaser_phone(self):
+        phone = (self.cleaned_data.get('purchaser_phone') or '').strip().replace(' ', '')
+        if not phone:
+            return phone
+        if not phone.isdigit() or len(phone) != 10 or not phone.startswith('07'):
+            raise forms.ValidationError('Enter a 10-digit number starting with 07.')
+        return phone
+
 
 class UserCreateForm(UserCreationForm):
     role = forms.ChoiceField(choices=UserProfile.ROLES)
@@ -39,13 +47,6 @@ class UserEditForm(forms.ModelForm):
         if self.instance and hasattr(self.instance, 'profile'):
             self.fields['role'].initial = self.instance.profile.role
     
-    def clean_purchaser_phone(self):
-        phone = (self.cleaned_data.get('purchaser_phone') or '').strip().replace(' ', '')
-        if not phone:
-            return phone
-        if not phone.isdigit() or len(phone) != 10 or not phone.startswith('07'):
-            raise forms.ValidationError('Enter a 10-digit number starting with 07.')
-        return phone
 
 
 class ScanForm(forms.Form):
