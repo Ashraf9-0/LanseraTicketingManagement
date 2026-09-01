@@ -1,36 +1,60 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import login, logout, authenticate
+import base64
+import os
+
+from django.contrib import messages
+from django.contrib.auth import login, logout, authenticate, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.contrib import messages
-from django.utils import timezone
 from django.db.models import Count, Q
-from django.http import JsonResponse
-from .models import Ticket, ScanLog, UserProfile
-from .forms import TicketCreateForm, UserCreateForm, UserEditForm
-from .utils import generate_qr_code_base64
-from .decorators import seller_or_admin, scanner_or_admin, admin_required
 from django.http import HttpResponse
+from django.shortcuts import render, redirect, get_object_or_404
 from django.template.loader import render_to_string
+from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from weasyprint import HTML as WeasyHTML
-import base64, os
-import json
-from django.contrib.auth import login, logout, authenticate, update_session_auth_hash
-from .forms import TicketCreateForm, UserCreateForm, UserEditForm, AdminPasswordChangeForm
 
+from .decorators import seller_or_admin, scanner_or_admin, admin_required
+from .forms import (
+    TicketCreateForm,
+    UserCreateForm,
+    UserEditForm,
+    AdminPasswordChangeForm,
+)
+from .models import Ticket, ScanLog, UserProfile
+from .utils import generate_qr_code_base64
+
+ROLE_SELLER = 'seller'
+ROLE_SCANNER = 'scanner'
+ROLE_ADMIN = 'admin'
+
+
+def _safe_redirect(request, fallback):
+    """Redirect back where the user came from, but never off-site."""
+    target = request.POST.get('next') or request.GET.get('next') or request.META.get('HTTP_REFERER', '')
+    if target and url_has_allowed_host_and_scheme(
+        target, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+    ):
+        return redirect(target)
+    return redirect(fallback)
+
+
+# ---------------------------------------------------------------- auth
 
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('dashboard')
+
     if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        user = authenticate(request, username=username, password=password)
+        user = authenticate(
+            request,
+            username=request.POST.get('username'),
+            password=request.POST.get('password'),
+        )
         if user:
             login(request, user)
-            next_url = request.GET.get('next', 'dashboard')
-            return redirect(next_url)
+            return _safe_redirect(request, 'dashboard')
         messages.error(request, 'Invalid username or password.')
+
     return render(request, 'tickets/login.html')
 
 
@@ -38,6 +62,8 @@ def logout_view(request):
     logout(request)
     return redirect('login')
 
+
+# ---------------------------------------------------------------- dashboard
 
 @login_required
 def dashboard(request):
@@ -49,38 +75,74 @@ def dashboard(request):
     role = profile.role
     context = {'role': role}
 
-    if role == 'seller':
-        my_tickets = Ticket.objects.filter(created_by=request.user).order_by('-created_at')
-        context['my_tickets'] = my_tickets[:10]
-        context['total_created'] = my_tickets.count()
-        context['used_count'] = my_tickets.filter(status='used').count()
-        context['unused_count'] = my_tickets.filter(status='unused').count()
-
-    elif role == 'scanner':
-        my_scans = ScanLog.objects.filter(scanned_by=request.user).order_by('-scanned_at')
-        context['recent_scans'] = my_scans[:10]
-        context['total_scans'] = my_scans.count()
-        context['valid_scans'] = my_scans.filter(result='valid').count()
-        context['invalid_scans'] = my_scans.filter(result__in=['already_used', 'invalid', 'inactive']).count()
-
-    elif role == 'admin':
-        context['total_tickets'] = Ticket.objects.count()
-        context['used_tickets'] = Ticket.objects.filter(status='used').count()
-        context['unused_tickets'] = Ticket.objects.filter(status='unused').count()
-        context['inactive_tickets'] = Ticket.objects.filter(is_active=False).count()
-        context['total_scans'] = ScanLog.objects.count()
-        context['invalid_scans'] = ScanLog.objects.filter(result__in=['invalid', 'inactive']).count()
-        context['total_users'] = User.objects.count()
-        context['recent_scans'] = ScanLog.objects.select_related('ticket', 'scanned_by').order_by('-scanned_at')[:10]
-        context['recent_tickets'] = Ticket.objects.select_related('created_by').order_by('-created_at')[:10]
-        context['sellers'] = User.objects.filter(profile__role='seller').annotate(
-            ticket_count=Count('created_tickets')
+    if role == ROLE_SELLER:
+        mine = Ticket.objects.filter(created_by=request.user)
+        counts = mine.aggregate(
+            total=Count('id'),
+            used=Count('id', filter=Q(status=Ticket.STATUS_USED)),
+            unused=Count('id', filter=Q(status=Ticket.STATUS_UNUSED)),
         )
-        context['early_bird_count'] = Ticket.objects.filter(ticket_type='early_bird').count()
-        context['regular_count'] = Ticket.objects.filter(ticket_type='regular').count()
-        context['vip_count'] = Ticket.objects.filter(ticket_type='vip').count()
+        context.update({
+            'my_tickets': mine.order_by('-created_at')[:10],
+            'total_created': counts['total'],
+            'used_count': counts['used'],
+            'unused_count': counts['unused'],
+        })
+
+    elif role == ROLE_SCANNER:
+        my_scans = ScanLog.objects.filter(scanned_by=request.user)
+        counts = my_scans.aggregate(
+            total=Count('id'),
+            valid=Count('id', filter=Q(result=ScanLog.RESULT_VALID)),
+            invalid=Count('id', filter=Q(result__in=[
+                ScanLog.RESULT_USED, ScanLog.RESULT_INVALID, ScanLog.RESULT_INACTIVE,
+            ])),
+        )
+        context.update({
+            'recent_scans': my_scans.select_related('ticket').order_by('-scanned_at')[:10],
+            'total_scans': counts['total'],
+            'valid_scans': counts['valid'],
+            'invalid_scans': counts['invalid'],
+        })
+
+    elif role == ROLE_ADMIN:
+        tickets = Ticket.objects.aggregate(
+            total=Count('id'),
+            used=Count('id', filter=Q(status=Ticket.STATUS_USED)),
+            unused=Count('id', filter=Q(status=Ticket.STATUS_UNUSED)),
+            inactive=Count('id', filter=Q(is_active=False)),
+            early_bird=Count('id', filter=Q(ticket_type=Ticket.TYPE_EARLY_BIRD)),
+            regular=Count('id', filter=Q(ticket_type=Ticket.TYPE_REGULAR)),
+            vip=Count('id', filter=Q(ticket_type=Ticket.TYPE_VIP)),
+        )
+        scans = ScanLog.objects.aggregate(
+            total=Count('id'),
+            invalid=Count('id', filter=Q(result__in=[
+                ScanLog.RESULT_INVALID, ScanLog.RESULT_INACTIVE,
+            ])),
+        )
+        context.update({
+            'total_tickets': tickets['total'],
+            'used_tickets': tickets['used'],
+            'unused_tickets': tickets['unused'],
+            'inactive_tickets': tickets['inactive'],
+            'early_bird_count': tickets['early_bird'],
+            'regular_count': tickets['regular'],
+            'vip_count': tickets['vip'],
+            'total_scans': scans['total'],
+            'invalid_scans': scans['invalid'],
+            'total_users': User.objects.count(),
+            'recent_scans': ScanLog.objects.select_related('ticket', 'scanned_by').order_by('-scanned_at')[:10],
+            'recent_tickets': Ticket.objects.select_related('created_by').order_by('-created_at')[:10],
+            'sellers': User.objects.filter(profile__role=ROLE_SELLER).annotate(
+                ticket_count=Count('created_tickets')
+            ),
+        })
 
     return render(request, 'tickets/dashboard.html', context)
+
+
+# ---------------------------------------------------------------- seller
 
 @login_required
 @seller_or_admin
@@ -101,29 +163,37 @@ def create_ticket(request):
 @login_required
 @seller_or_admin
 def my_tickets(request):
-    if request.user.profile.role == 'admin':
-        tickets = Ticket.objects.select_related('created_by', 'validated_by').order_by('-created_at')
+    if request.user.profile.role == ROLE_ADMIN:
+        tickets = Ticket.objects.select_related('created_by', 'validated_by')
     else:
-        tickets = Ticket.objects.filter(created_by=request.user).select_related('validated_by').order_by('-created_at')
+        tickets = Ticket.objects.filter(created_by=request.user).select_related('validated_by')
 
     status_filter = request.GET.get('status', '')
-    if status_filter in ['used', 'unused']:
+    if status_filter in (Ticket.STATUS_USED, Ticket.STATUS_UNUSED):
         tickets = tickets.filter(status=status_filter)
 
-    return render(request, 'tickets/my_tickets.html', {'tickets': tickets, 'status_filter': status_filter})
+    return render(request, 'tickets/my_tickets.html', {
+        'tickets': tickets.order_by('-created_at'),
+        'status_filter': status_filter,
+    })
 
 
 @login_required
 def ticket_detail(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk)
     profile = getattr(request.user, 'profile', None)
-    if profile and profile.role == 'seller' and ticket.created_by != request.user:
+    if profile and profile.role == ROLE_SELLER and ticket.created_by != request.user:
         messages.error(request, "You can only view your own tickets.")
         return redirect('my_tickets')
-    scan_logs = ticket.scan_logs.select_related('scanned_by').order_by('-scanned_at')
-    qr_b64 = generate_qr_code_base64(ticket.token)
-    return render(request, 'tickets/ticket_detail.html', {'ticket': ticket, 'scan_logs': scan_logs, 'qr_b64': qr_b64})
 
+    return render(request, 'tickets/ticket_detail.html', {
+        'ticket': ticket,
+        'scan_logs': ticket.scan_logs.select_related('scanned_by').order_by('-scanned_at'),
+        'qr_b64': generate_qr_code_base64(ticket.token),
+    })
+
+
+# ---------------------------------------------------------------- scanner
 
 @login_required
 @scanner_or_admin
@@ -131,54 +201,75 @@ def scan_ticket(request):
     context = {}
     if request.method == 'POST':
         token = request.POST.get('ticket_token', '').strip()
-        result_data = validate_ticket_token(token, request.user)
-        context['scan_result'] = result_data
+        context['scan_result'] = validate_ticket_token(token, request.user)
     return render(request, 'tickets/scan_ticket.html', context)
 
 
 def validate_ticket_token(token, user):
     if not token:
-        ScanLog.objects.create(scanned_by=user, result='invalid', raw_data='', notes='Empty token submitted')
-        return {'result': 'invalid', 'message': 'No ticket data received.', 'ticket': None}
+        ScanLog.objects.create(
+            scanned_by=user, result=ScanLog.RESULT_INVALID,
+            raw_data='', notes='Empty token submitted',
+        )
+        return {'result': ScanLog.RESULT_INVALID, 'message': 'No ticket data received.', 'ticket': None}
 
     try:
         ticket = Ticket.objects.get(token=token)
     except Ticket.DoesNotExist:
-        ScanLog.objects.create(scanned_by=user, result='invalid', raw_data=token, notes='Token not found in database')
-        return {'result': 'invalid', 'message': 'Ticket not found. It may be forged or tampered.', 'ticket': None}
+        ScanLog.objects.create(
+            scanned_by=user, result=ScanLog.RESULT_INVALID,
+            raw_data=token, notes='Token not found in database',
+        )
+        return {
+            'result': ScanLog.RESULT_INVALID,
+            'message': 'Ticket not found. It may be forged or tampered.',
+            'ticket': None,
+        }
 
     if not ticket.is_active:
-        ScanLog.objects.create(scanned_by=user, ticket=ticket, result='inactive', raw_data=token)
-        return {'result': 'inactive', 'message': 'This ticket has been deactivated.', 'ticket': ticket}
+        ScanLog.objects.create(
+            scanned_by=user, ticket=ticket, result=ScanLog.RESULT_INACTIVE, raw_data=token,
+        )
+        return {
+            'result': ScanLog.RESULT_INACTIVE,
+            'message': 'This ticket has been deactivated.',
+            'ticket': ticket,
+        }
 
     if ticket.is_used:
-        ScanLog.objects.create(scanned_by=user, ticket=ticket, result='already_used', raw_data=token)
+        ScanLog.objects.create(
+            scanned_by=user, ticket=ticket, result=ScanLog.RESULT_USED, raw_data=token,
+        )
         return {
-            'result': 'already_used',
+            'result': ScanLog.RESULT_USED,
             'message': 'This ticket has already been used.',
             'ticket': ticket,
             'first_scan': ticket.validated_at,
             'first_scanner': ticket.validated_by,
         }
 
-    # Valid! Mark as used.
+    # Valid — mark as used.
     ticket.status = Ticket.STATUS_USED
     ticket.validated_at = timezone.now()
     ticket.validated_by = user
-    ticket.save()
-    ScanLog.objects.create(scanned_by=user, ticket=ticket, result='valid', raw_data=token)
-    return {'result': 'valid', 'message': 'Ticket is valid. Entry granted!', 'ticket': ticket}
+    ticket.save(update_fields=['status', 'validated_at', 'validated_by'])
+    ScanLog.objects.create(
+        scanned_by=user, ticket=ticket, result=ScanLog.RESULT_VALID, raw_data=token,
+    )
+    return {'result': ScanLog.RESULT_VALID, 'message': 'Ticket is valid. Entry granted!', 'ticket': ticket}
 
+
+# ---------------------------------------------------------------- admin: tickets
 
 @login_required
 @admin_required
 def ticket_management(request):
-    tickets = Ticket.objects.select_related('created_by', 'validated_by').order_by('-created_at')
+    tickets = Ticket.objects.select_related('created_by', 'validated_by')
     status_filter = request.GET.get('status', '')
     active_filter = request.GET.get('active', '')
-    search = request.GET.get('search', '')
+    search = request.GET.get('search', '').strip()
 
-    if status_filter in ['used', 'unused']:
+    if status_filter in (Ticket.STATUS_USED, Ticket.STATUS_UNUSED):
         tickets = tickets.filter(status=status_filter)
     if active_filter == 'active':
         tickets = tickets.filter(is_active=True)
@@ -188,11 +279,12 @@ def ticket_management(request):
         tickets = tickets.filter(
             Q(purchaser_name__icontains=search) |
             Q(ticket_id__icontains=search) |
-            Q(purchaser_email__icontains=search)
+            Q(purchaser_email__icontains=search) |
+            Q(purchaser_phone__icontains=search)
         )
 
     return render(request, 'tickets/ticket_management.html', {
-        'tickets': tickets,
+        'tickets': tickets.order_by('-created_at'),
         'status_filter': status_filter,
         'active_filter': active_filter,
         'search': search,
@@ -204,10 +296,10 @@ def ticket_management(request):
 def toggle_ticket_active(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk)
     ticket.is_active = not ticket.is_active
-    ticket.save()
+    ticket.save(update_fields=['is_active'])
     state = 'activated' if ticket.is_active else 'deactivated'
     messages.success(request, f'Ticket {ticket.short_id} has been {state}.')
-    return redirect(request.META.get('HTTP_REFERER', 'ticket_management'))
+    return _safe_redirect(request, 'ticket_management')
 
 
 @login_required
@@ -222,17 +314,18 @@ def delete_ticket(request, pk):
     if ticket.is_active:
         messages.error(
             request,
-            f'Ticket {ticket.short_id} is still active. Deactivate it first, then delete.'
+            f'Ticket {ticket.short_id} is still active. Deactivate it first, then delete.',
         )
         return redirect('ticket_management')
 
-    short_id = ticket.short_id
-    name = ticket.purchaser_name
-    # ScanLog.ticket is SET_NULL, so scan history is preserved as an orphaned record.
+    short_id, name = ticket.short_id, ticket.purchaser_name
+    # ScanLog.ticket is SET_NULL, so scan history survives as an orphaned record.
     ticket.delete()
     messages.success(request, f'Ticket {short_id} ({name}) was permanently deleted.')
     return redirect('ticket_management')
 
+
+# ---------------------------------------------------------------- admin: users
 
 @login_required
 @admin_required
@@ -249,7 +342,7 @@ def create_user(request):
         if form.is_valid():
             user = form.save()
             role = form.cleaned_data['role']
-            UserProfile.objects.create(user=user, role=role)
+            UserProfile.objects.update_or_create(user=user, defaults={'role': role})
             messages.success(request, f'User {user.username} created with role {role}.')
             return redirect('user_management')
     else:
@@ -260,22 +353,21 @@ def create_user(request):
 @login_required
 @admin_required
 def edit_user(request, pk):
-    user = get_object_or_404(User, pk=pk)
+    edited_user = get_object_or_404(User, pk=pk)
+
     if request.method == 'POST':
-        form = UserEditForm(request.POST, instance=user)
+        form = UserEditForm(request.POST, instance=edited_user)
         if form.is_valid():
             form.save()
-            role = form.cleaned_data['role']
-            profile, _ = UserProfile.objects.get_or_create(user=user)
-            profile.role = role
-            profile.save()
-            messages.success(request, f'User {user.username} updated.')
+            UserProfile.objects.update_or_create(
+                user=edited_user, defaults={'role': form.cleaned_data['role']},
+            )
+            messages.success(request, f'User {edited_user.username} updated.')
             return redirect('user_management')
     else:
-        form = UserEditForm(instance=user)
-        if hasattr(user, 'profile'):
-            form.fields['role'].initial = user.profile.role
-    return render(request, 'tickets/edit_user.html', {'form': form, 'edited_user': user})
+        form = UserEditForm(instance=edited_user)
+
+    return render(request, 'tickets/edit_user.html', {'form': form, 'edited_user': edited_user})
 
 
 @login_required
@@ -287,17 +379,17 @@ def change_user_password(request, pk):
         form = AdminPasswordChangeForm(request.POST)
         if form.is_valid():
             target_user.set_password(form.cleaned_data['password1'])
-            target_user.save()
+            target_user.save(update_fields=['password'])
 
             if target_user.pk == request.user.pk:
-                # Keep the admin logged in after changing their own password
+                # Keep the admin signed in after changing their own password.
                 update_session_auth_hash(request, target_user)
                 messages.success(request, 'Your password has been updated.')
             else:
                 messages.success(
                     request,
                     f'Password for {target_user.username} has been reset. '
-                    f'They will need to log in again with the new password.'
+                    f'They will need to log in again with the new password.',
                 )
             return redirect('user_management')
     else:
@@ -306,71 +398,73 @@ def change_user_password(request, pk):
     return render(request, 'tickets/change_password.html', {
         'form': form,
         'target_user': target_user,
-    })    
+    })
+
+
+# ---------------------------------------------------------------- admin: reports
 
 @login_required
 @admin_required
 def reports(request):
-    total = Ticket.objects.count()
-    used = Ticket.objects.filter(status='used').count()
-    unused = Ticket.objects.filter(status='unused').count()
-    inactive = Ticket.objects.filter(is_active=False).count()
+    totals = Ticket.objects.aggregate(
+        total=Count('id'),
+        used=Count('id', filter=Q(status=Ticket.STATUS_USED)),
+        unused=Count('id', filter=Q(status=Ticket.STATUS_UNUSED)),
+        inactive=Count('id', filter=Q(is_active=False)),
+    )
 
-    scans_by_result = ScanLog.objects.values('result').annotate(count=Count('id'))
-    scan_data = {s['result']: s['count'] for s in scans_by_result}
+    scan_data = {
+        row['result']: row['count']
+        for row in ScanLog.objects.values('result').annotate(count=Count('id'))
+    }
 
-    sellers = User.objects.filter(profile__role='seller').annotate(
+    sellers = User.objects.filter(profile__role=ROLE_SELLER).annotate(
         tickets_created=Count('created_tickets'),
-        used_tickets=Count('created_tickets', filter=Q(created_tickets__status='used')),
+        used_tickets=Count('created_tickets', filter=Q(created_tickets__status=Ticket.STATUS_USED)),
     ).order_by('-tickets_created')
 
-    scanner_qs = User.objects.filter(profile__role='scanner')
-    scanners = []
-    for sc in scanner_qs:
-        logs = ScanLog.objects.filter(scanned_by=sc)
-        sc.total_scans = logs.count()
-        sc.valid_scans = logs.filter(result='valid').count()
-        scanners.append(sc)
-    scanners.sort(key=lambda x: x.total_scans, reverse=True)
-
-    recent_logs = ScanLog.objects.select_related('ticket', 'scanned_by').order_by('-scanned_at')[:50]
+    scanners = User.objects.filter(profile__role=ROLE_SCANNER).annotate(
+        total_scans=Count('scanlog'),
+        valid_scans=Count('scanlog', filter=Q(scanlog__result=ScanLog.RESULT_VALID)),
+    ).order_by('-total_scans')
 
     return render(request, 'tickets/reports.html', {
-        'total': total, 'used': used, 'unused': unused, 'inactive': inactive,
-        'scan_data': scan_data, 'sellers': sellers, 'scanners': scanners,
-        'recent_logs': recent_logs,
+        'total': totals['total'],
+        'used': totals['used'],
+        'unused': totals['unused'],
+        'inactive': totals['inactive'],
+        'scan_data': scan_data,
+        'sellers': sellers,
+        'scanners': scanners,
+        'recent_logs': ScanLog.objects.select_related('ticket', 'scanned_by').order_by('-scanned_at')[:50],
     })
-    
 
+
+# ---------------------------------------------------------------- pdf
 
 @login_required
 def ticket_pdf(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk)
     profile = getattr(request.user, 'profile', None)
-    if profile and profile.role == 'seller' and ticket.created_by != request.user:
+    if profile and profile.role == ROLE_SELLER and ticket.created_by != request.user:
         messages.error(request, "You can only print your own tickets.")
         return redirect('my_tickets')
 
-    # Embed QR image as base64 so WeasyPrint can render it
-    qr_b64 = generate_qr_code_base64(ticket.token)
-
-    # Embed logo
     logo_b64 = ''
     base_dir = os.path.dirname(os.path.dirname(__file__))
-    for ext in ['png', 'jpg', 'jpeg']:
+    for ext in ('png', 'jpg', 'jpeg'):
         logo_path = os.path.join(base_dir, 'static', 'images', f'logo.{ext}')
         if os.path.exists(logo_path):
-            with open(logo_path, 'rb') as f:
-                logo_b64 = base64.b64encode(f.read()).decode()
+            with open(logo_path, 'rb') as fh:
+                logo_b64 = base64.b64encode(fh.read()).decode()
             break
 
     html_string = render_to_string('tickets/ticket_pdf.html', {
         'ticket': ticket,
-        'qr_b64': qr_b64,
+        'qr_b64': generate_qr_code_base64(ticket.token),
         'logo_b64': logo_b64,
     })
 
-    pdf_file = WeasyHTML(string=html_string).write_pdf()
-    response = HttpResponse(pdf_file, content_type='application/pdf')
+    response = HttpResponse(WeasyHTML(string=html_string).write_pdf(), content_type='application/pdf')
     response['Content-Disposition'] = f'filename="LANESRA-Ticket-{ticket.short_id}.pdf"'
     return response
